@@ -1,0 +1,465 @@
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('gasto-form');
+  const fechaInput = document.getElementById('fecha');
+  const descripcionInput = document.getElementById('descripcion');
+  const importeInput = document.getElementById('importe');
+  const metodoPagoInput = document.getElementById('metodo-pago');
+  const categoriaInput = document.getElementById('categoria');
+  const subcategoriaInput = document.getElementById('subcategoria');
+  const grupoOtraSub = document.getElementById('grupo-otra-sub');
+  const otraSubcategoriaInput = document.getElementById('otra-subcategoria');
+  const listaGastos = document.getElementById('lista-gastos');
+  const totalImporte = document.getElementById('total-importe');
+  const totalRegistros = document.getElementById('total-registros');
+  const btnSubmitForm = document.getElementById('btn-submit-form');
+  const btnCancelarEdicion = document.getElementById('btn-cancelar-edicion');
+  
+  const filtroAno = document.getElementById('filtro-ano');
+  const filtroMes = document.getElementById('filtro-mes');
+  const filtroCategoria = document.getElementById('filtro-categoria');
+  const filtroMetodo = document.getElementById('filtro-metodo');
+  const resumenAnual = document.getElementById('resumen-anual');
+  const resumenMes = document.getElementById('resumen-mes');
+
+  fechaInput.value = new Date().toISOString().split('T')[0];
+
+  let modoEdicionIndex = null;
+
+  let graficoCategoriasInstance = null;
+  let graficoSubcategoriasInstance = null;
+  let graficoMetodosInstance = null;
+  let graficoMesesInstance = null;
+
+  const subcategoriasData = {
+    "Ahorro casa": ["General"],
+    "Alimentación": ["Supermercados"],
+    "Educación": ["Cursos", "Libros y material de estudio", "Universidad"],
+    "Finanzas y obligaciones": ["Impuestos", "Préstamos", "Seguro coche", "Seguro médico"],
+    "Hogar": ["Artículos limpieza", "Hipoteca", "Mantenimiento", "Seguro", "Suministros"],
+    "Imprevistos": ["General"],
+    "Inversiones": ["Criptos", "Fondos", "Plan ahorro", "Plan pensiones"],
+    "Mascota": ["Medicación", "Pienso", "Veterinario"],
+    "Ocio": ["Aficiones", "Cine", "Conciertos", "Suscripciones", "Viajes"],
+    "Regalos": ["Cumpleaños", "Festivos"],
+    "Salud y bienestar": ["Cosmética", "Farmacia", "Gimnasio", "Peluquería"],
+    "Transporte": ["Gasolina", "ITV", "Mecánico", "Parking", "Peajes"]
+  };
+
+  const iconosCategorias = {
+    "Ahorro casa": "🏡",
+    "Alimentación": "🛒",
+    "Educación": "📚",
+    "Finanzas y obligaciones": "⚖️",
+    "Hogar": "🏠",
+    "Imprevistos": "🚨",
+    "Inversiones": "📈",
+    "Mascota": "🐾",
+    "Ocio": "🎟️",
+    "Regalos": "🎁",
+    "Salud y bienestar": "🩺",
+    "Transporte": "🚗"
+  };
+
+  const iconosMetodosPago = {
+    "Bizum": "📲",
+    "Domiciliación": "📄",
+    "Efectivo": "💵",
+    "Tarjeta": "💳",
+    "Transferencia": "🏦"
+  };
+
+  window.cambiarPestana = function(pestana) {
+    const btnRegistro = document.querySelectorAll('.pestana-btn')[0];
+    const btnDashboard = document.querySelectorAll('.pestana-btn')[1];
+    const btnHistorial = document.querySelectorAll('.pestana-btn')[2];
+
+    const secRegistro = document.getElementById('seccion-registro');
+    const secDashboard = document.getElementById('seccion-dashboard');
+    const secHistorial = document.getElementById('seccion-historial');
+
+    secRegistro.style.display = 'none';
+    secDashboard.style.display = 'none';
+    secHistorial.style.display = 'none';
+
+    btnRegistro.classList.remove('activa');
+    btnDashboard.classList.remove('activa');
+    btnHistorial.classList.remove('activa');
+
+    if (pestana === 'registro') {
+      btnRegistro.classList.add('activa');
+      secRegistro.style.display = 'block';
+    } else if (pestana === 'dashboard') {
+      btnDashboard.classList.add('activa');
+      secDashboard.style.display = 'block';
+      actualizarDashboard();
+    } else if (pestana === 'historial') {
+      btnHistorial.classList.add('activa');
+      secHistorial.style.display = 'block';
+    }
+  };
+
+  function cargarSubcategorias(categoriaSeleccionada, subcategoriaASeleccionar = null) {
+    subcategoriaInput.innerHTML = '<option value="" disabled selected>Selecciona una subcategoría</option>';
+    
+    if (subcategoriasData[categoriaSeleccionada]) {
+      const subcategoriasOrdenadas = [...subcategoriasData[categoriaSeleccionada]].sort((a, b) => 
+        a.localeCompare(b, 'es')
+      );
+
+      subcategoriasOrdenadas.forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub;
+        option.textContent = sub;
+        subcategoriaInput.appendChild(option);
+      });
+      
+      const optionOtra = document.createElement('option');
+      optionOtra.value = "Otra";
+      optionOtra.textContent = "Otra (escribir...)";
+      subcategoriaInput.appendChild(optionOtra);
+    }
+
+    if (subcategoriaASeleccionar) {
+      if (subcategoriasData[categoriaSeleccionada] && subcategoriasData[categoriaSeleccionada].includes(subcategoriaASeleccionar)) {
+        subcategoriaInput.value = subcategoriaASeleccionar;
+        grupoOtraSub.style.display = 'none';
+        otraSubcategoriaInput.required = false;
+      } else {
+        subcategoriaInput.value = "Otra";
+        grupoOtraSub.style.display = 'block';
+        otraSubcategoriaInput.value = subcategoriaASeleccionar;
+        otraSubcategoriaInput.required = true;
+      }
+    } else {
+      grupoOtraSub.style.display = 'none';
+      otraSubcategoriaInput.required = false;
+    }
+  }
+
+  categoriaInput.addEventListener('change', function() {
+    cargarSubcategorias(this.value);
+  });
+
+  subcategoriaInput.addEventListener('change', function() {
+    if (this.value === "Otra") {
+      grupoOtraSub.style.display = 'block';
+      otraSubcategoriaInput.required = true;
+      otraSubcategoriaInput.focus();
+    } else {
+      grupoOtraSub.style.display = 'none';
+      otraSubcategoriaInput.required = false;
+      otraSubcategoriaInput.value = '';
+    }
+  });
+
+  let gastos = JSON.parse(localStorage.getItem('gastos')) || [];
+
+  function actualizarFiltroAnos() {
+    const anos = [...new Set(gastos.map(g => g.fecha ? g.fecha.split('-')[0] : new Date().getFullYear()))].sort().reverse();
+    const anoActualSeleccionado = filtroAno.value;
+    
+    filtroAno.innerHTML = '<option value="todos">Todos</option>';
+    anos.forEach(ano => {
+      const opt = document.createElement('option');
+      opt.value = ano;
+      opt.textContent = ano;
+      filtroAno.appendChild(opt);
+    });
+    if (anos.includes(anoActualSeleccionado)) {
+      filtroAno.value = anoActualSeleccionado;
+    }
+  }
+
+  filtroAno.addEventListener('change', actualizarDashboard);
+  filtroMes.addEventListener('change', actualizarDashboard);
+  filtroCategoria.addEventListener('change', actualizarDashboard);
+  filtroMetodo.addEventListener('change', actualizarDashboard);
+
+  function actualizarDashboard() {
+    actualizarFiltroAnos();
+    const anoSel = filtroAno.value;
+    const mesSel = filtroMes.value;
+    const catSel = filtroCategoria.value;
+    const metodoSel = filtroMetodo.value;
+
+    let gastosFiltrados = gastos.filter(g => {
+      if (!g.fecha) return true;
+      const partes = g.fecha.split('-');
+      const partesAno = partes[0];
+      const partesMes = partes[1];
+      
+      const cumpleAno = (anoSel === 'todos' || partesAno === anoSel);
+      const cumpleMes = (mesSel === 'todos' || partesMes === mesSel);
+      const cumpleCat = (catSel === 'todas' || g.categoria === catSel);
+      const cumpleMetodo = (metodoSel === 'todos' || g.metodoPago === metodoSel);
+
+      return cumpleAno && cumpleMes && cumpleCat && cumpleMetodo;
+    });
+
+    const totalFiltradoVal = gastosFiltrados.reduce((acc, g) => acc + parseFloat(g.importe), 0);
+    resumenAnual.textContent = totalFiltradoVal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+    const mesActualStr = new Date().toISOString().slice(0, 7);
+    const gastosMesActual = gastos.filter(g => g.fecha && g.fecha.startsWith(mesActualStr));
+    const totalMesVal = gastosMesActual.reduce((acc, g) => acc + parseFloat(g.importe), 0);
+    resumenMes.textContent = totalMesVal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+    const paletaPastelClara = [
+      'rgba(247, 215, 178, 0.85)',
+      'rgba(232, 163, 143, 0.8)',
+      'rgba(215, 184, 156, 0.85)',
+      'rgba(177, 194, 161, 0.8)',
+      'rgba(245, 203, 152, 0.85)',
+      'rgba(225, 190, 175, 0.8)',
+      'rgba(201, 214, 188, 0.85)'
+    ];
+
+    // 1. Gráfico Anual
+    const ctxMes = document.getElementById('graficoMeses').getContext('2d');
+    const valoresMeses = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    
+    let gastosParaBarras = gastos.filter(g => {
+      if (!g.fecha) return true;
+      const partes = g.fecha.split('-');
+      const partesAno = partes[0];
+      const partesMes = partes[1];
+      
+      const cumpleAno = (anoSel === 'todos' || partesAno === anoSel);
+      const cumpleCat = (catSel === 'todas' || g.categoria === catSel);
+      const cumpleMes = (mesSel === 'todos' || partesMes === mesSel);
+      const cumpleMetodo = (metodoSel === 'todos' || g.metodoPago === metodoSel);
+
+      return cumpleAno && cumpleCat && cumpleMes && cumpleMetodo;
+    });
+
+    gastosParaBarras.forEach(g => {
+      if (g.fecha) {
+        const mesStr = g.fecha.split('-')[1];
+        const mesIndex = parseInt(mesStr, 10) - 1;
+        if (mesIndex >= 0 && mesIndex <= 11) {
+          valoresMeses[mesIndex] += parseFloat(g.importe);
+        }
+      }
+    });
+
+    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    if (graficoMesesInstance) graficoMesesInstance.destroy();
+    graficoMesesInstance = new Chart(ctxMes, {
+      type: 'bar',
+      data: {
+        labels: nombresMeses,
+        datasets: [{
+          label: 'Gasto (€)',
+          data: valoresMeses,
+          backgroundColor: 'rgba(247, 215, 178, 0.9)',
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: 'rgba(235, 195, 155, 1)'
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#faf5ee' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 2. Gráfico Categoría
+    const ctxCat = document.getElementById('graficoCategorias').getContext('2d');
+    const porCat = {};
+    gastosFiltrados.forEach(g => {
+      porCat[g.categoria] = (porCat[g.categoria] || 0) + parseFloat(g.importe);
+    });
+
+    if (graficoCategoriasInstance) graficoCategoriasInstance.destroy();
+    graficoCategoriasInstance = new Chart(ctxCat, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(porCat),
+        datasets: [{ 
+          data: Object.values(porCat), 
+          backgroundColor: paletaPastelClara.slice(0, Object.keys(porCat).length),
+          borderWidth: 2,
+          borderColor: '#faf7f2'
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } 
+      }
+    });
+
+    // 3. Gráfico Subcategoría
+    const ctxSub = document.getElementById('graficoSubcategorias').getContext('2d');
+    const porSub = {};
+    gastosFiltrados.forEach(g => {
+      const subKey = g.subcategoria;
+      porSub[subKey] = (porSub[subKey] || 0) + parseFloat(g.importe);
+    });
+
+    if (graficoSubcategoriasInstance) graficoSubcategoriasInstance.destroy();
+    graficoSubcategoriasInstance = new Chart(ctxSub, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(porSub),
+        datasets: [{
+          label: 'Gasto (€)',
+          data: Object.values(porSub),
+          backgroundColor: 'rgba(177, 194, 161, 0.85)',
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: 'rgba(155, 174, 139, 1)'
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#faf5ee' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 4. Gráfico Método de Pago
+    const ctxMetodo = document.getElementById('graficoMetodos').getContext('2d');
+    const porMetodo = {};
+    gastosFiltrados.forEach(g => {
+      const metodoKey = g.metodoPago || 'No especificado';
+      porMetodo[metodoKey] = (porMetodo[metodoKey] || 0) + parseFloat(g.importe);
+    });
+
+    if (graficoMetodosInstance) graficoMetodosInstance.destroy();
+    graficoMetodosInstance = new Chart(ctxMetodo, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(porMetodo),
+        datasets: [{
+          data: Object.values(porMetodo),
+          backgroundColor: ['rgba(232, 163, 143, 0.85)', 'rgba(245, 203, 152, 0.85)', 'rgba(177, 194, 161, 0.85)', 'rgba(215, 184, 156, 0.85)', 'rgba(225, 190, 175, 0.85)'],
+          borderWidth: 2,
+          borderColor: '#faf7f2'
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } 
+      }
+    });
+  }
+
+  function actualizarApp() {
+    listaGastos.innerHTML = '';
+    let total = 0;
+
+    gastos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    gastos.forEach((gasto, index) => {
+      total += parseFloat(gasto.importe);
+
+      let fechaBonita = '';
+      if (gasto.fecha) {
+        const partes = gasto.fecha.split('-');
+        fechaBonita = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+
+      const iconoCat = iconosCategorias[gasto.categoria] || '📌';
+      const iconoPago = iconosMetodosPago[gasto.metodoPago] || '💳';
+      const metodoPagoTxt = gasto.metodoPago ? ` • ${iconoPago} ${gasto.metodoPago}` : '';
+
+      const li = document.createElement('li');
+      li.className = 'item-gasto';
+      li.innerHTML = `
+        <div class="item-info">
+          <strong>${gasto.descripcion}</strong>
+          <small>${fechaBonita} - ${iconoCat} ${gasto.categoria} › ${gasto.subcategoria}${metodoPagoTxt}</small>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span class="item-importe">-${Number(gasto.importe).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+          <button onclick="prepararEdicion(${index})" style="background: #e5b060; width: auto; padding: 5px 8px; margin: 0; font-size: 0.8rem; border-radius: 6px; border: none; color: white; cursor: pointer;">✏️</button>
+          <button onclick="eliminarGasto(${index})" style="background: #e8a38f; width: auto; padding: 5px 8px; margin: 0; font-size: 0.8rem; border-radius: 6px; border: none; color: white; cursor: pointer;">🗑️</button>
+        </div>
+      `;
+      listaGastos.appendChild(li);
+    });
+
+    totalImporte.textContent = total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    totalRegistros.textContent = gastos.length;
+    localStorage.setItem('gastos', JSON.stringify(gastos));
+    actualizarFiltroAnos();
+  }
+
+  window.prepararEdicion = function(index) {
+    const gasto = gastos[index];
+    modoEdicionIndex = index;
+
+    fechaInput.value = gasto.fecha;
+    descripcionInput.value = gasto.descripcion;
+    importeInput.value = gasto.importe;
+    metodoPagoInput.value = gasto.metodoPago || '';
+    categoriaInput.value = gasto.categoria;
+    
+    cargarSubcategorias(gasto.categoria, gasto.subcategoria);
+
+    btnSubmitForm.textContent = 'Guardar Cambios';
+    btnCancelarEdicion.style.display = 'block';
+
+    cambiarPestana('registro');
+  };
+
+  function resetearFormulario() {
+    modoEdicionIndex = null;
+    descripcionInput.value = '';
+    importeInput.value = '';
+    fechaInput.value = new Date().toISOString().split('T')[0];
+    metodoPagoInput.selectedIndex = 0;
+    categoriaInput.selectedIndex = 0;
+    subcategoriaInput.innerHTML = '<option value="" disabled selected>Primero selecciona una categoría</option>';
+    grupoOtraSub.style.display = 'none';
+    otraSubcategoriaInput.value = '';
+    
+    btnSubmitForm.textContent = 'Añadir Gasto';
+    btnCancelarEdicion.style.display = 'none';
+  }
+
+  btnCancelarEdicion.addEventListener('click', resetearFormulario);
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    let subcatFinal = subcategoriaInput.value;
+    if (subcatFinal === "Otra") {
+      subcatFinal = otraSubcategoriaInput.value.trim();
+    }
+
+    const gastoData = {
+      fecha: fechaInput.value,
+      descripcion: descripcionInput.value,
+      importe: importeInput.value,
+      metodoPago: metodoPagoInput.value,
+      categoria: categoriaInput.value,
+      subcategoria: subcatFinal
+    };
+
+    if (modoEdicionIndex !== null) {
+      gastos[modoEdicionIndex] = gastoData;
+    } else {
+      gastos.push(gastoData);
+    }
+
+    resetearFormulario();
+    actualizarApp();
+    cambiarPestana('historial');
+  });
+
+  window.eliminarGasto = function(index) {
+    gastos.splice(index, 1);
+    actualizarApp();
+  };
+
+  actualizarApp();
+});
