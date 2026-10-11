@@ -401,6 +401,13 @@
 
       <h2>Historial de Ingresos</h2>
       <ul id="lista-ingresos" class="lista-gastos"></ul>
+
+      <!-- Opciones de Copia de Seguridad en Ingresos -->
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color); display: flex; gap: 8px;">
+        <button id="btn-exportar-ingresos" style="flex: 1; background: #d5b99b; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📦 Exportar Copia</button>
+        <button id="btn-importar-trigger-ingresos" style="flex: 1; background: #b1c2a1; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📥 Importar Copia</button>
+        <input type="file" id="input-importar-ingresos" accept=".json" style="display: none;">
+      </div>
     </div>
 
     <!-- PESTAÑA: HISTORIAL DE GASTOS -->
