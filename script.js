@@ -935,7 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-    // 1. Ingresos vs. Gastos (Colores pastel unificados)
+    // 1. Ingresos vs. Gastos
     const elGraficoIngGastos = document.getElementById('graficoIngresosGastos');
     if (elGraficoIngGastos && typeof Chart !== 'undefined') {
       const ctxIG = elGraficoIngGastos.getContext('2d');
@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
               label: `Ingresos (${monedaActual})`,
               data: valoresIngresosMeses,
-              backgroundColor: 'rgba(177, 194, 161, 0.85)', // Verde pastel unificado
+              backgroundColor: 'rgba(177, 194, 161, 0.85)',
               borderRadius: 6,
               borderWidth: 1,
               borderColor: 'rgba(155, 174, 139, 1)'
@@ -986,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
               label: `Gastos (${monedaActual})`,
               data: valoresGastosMeses,
-              backgroundColor: 'rgba(232, 163, 143, 0.85)', // Melocotón pastel unificado
+              backgroundColor: 'rgba(232, 163, 143, 0.85)',
               borderRadius: 6,
               borderWidth: 1,
               borderColor: 'rgba(210, 135, 115, 1)'
@@ -1004,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 2. Distribución ingresos (Colores pastel unificados usando la misma paleta)
+    // 2. Distribución ingresos
     const elGraficoFuentesIng = document.getElementById('graficoFuentesIngresos');
     if (elGraficoFuentesIng && typeof Chart !== 'undefined') {
       const ctxFI = elGraficoFuentesIng.getContext('2d');
@@ -1320,6 +1320,65 @@ document.addEventListener('DOMContentLoaded', function() {
     gastos.splice(index, 1);
     window.actualizarApp();
   };
+
+  // Funciones y eventos globales para Exportar e Importar Copias de Seguridad en ambas pestañas
+  function exportarCopiaSeguridad() {
+    const data = {
+      gastos: JSON.parse(localStorage.getItem('gastos')) || [],
+      ingresos: JSON.parse(localStorage.getItem('ingresos')) || [],
+      gastosRecurrentes: JSON.parse(localStorage.getItem('gastosRecurrentes')) || [],
+      monthlyBudget: localStorage.getItem('monthlyBudget') || '500',
+      monedaApp: localStorage.getItem('monedaApp') || '€'
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `copia_finanzas_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function importarCopiaSeguridad(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        if (importedData.gastos) localStorage.setItem('gastos', JSON.stringify(importedData.gastos));
+        if (importedData.ingresos) localStorage.setItem('ingresos', JSON.stringify(importedData.ingresos));
+        if (importedData.gastosRecurrentes) localStorage.setItem('gastosRecurrentes', JSON.stringify(importedData.gastosRecurrentes));
+        if (importedData.monthlyBudget) localStorage.setItem('monthlyBudget', importedData.monthlyBudget);
+        if (importedData.monedaApp) localStorage.setItem('monedaApp', importedData.monedaApp);
+        alert("¡Copia de seguridad restaurada con éxito!");
+        window.location.reload();
+      } catch (err) {
+        alert("El archivo seleccionado no es un JSON de copia de seguridad válido.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Eventos para H.Gastos
+  const btnExportar = document.getElementById('btn-exportar');
+  const btnImportarTrigger = document.getElementById('btn-importar-trigger');
+  const inputImportar = document.getElementById('input-importar');
+  if (btnExportar) btnExportar.addEventListener('click', exportarCopiaSeguridad);
+  if (btnImportarTrigger && inputImportar) {
+    btnImportarTrigger.addEventListener('click', () => inputImportar.click());
+    inputImportar.addEventListener('change', importarCopiaSeguridad);
+  }
+
+  // Eventos para H.Ingr
+  const btnExportarIng = document.getElementById('btn-exportar-ingresos');
+  const btnImportarTriggerIng = document.getElementById('btn-importar-trigger-ingresos');
+  const inputImportarIng = document.getElementById('input-importar-ingresos');
+  if (btnExportarIng) btnExportarIng.addEventListener('click', exportarCopiaSeguridad);
+  if (btnImportarTriggerIng && inputImportarIng) {
+    btnImportarTriggerIng.addEventListener('click', () => inputImportarIng.click());
+    inputImportarIng.addEventListener('change', importarCopiaSeguridad);
+  }
 
   // Inicializar
   window.actualizarPresupuestoUI();
