@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Gastos e Ingresos</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- LIBRERÍA DE IA / OCR PARA LEER TICKETS -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h1 style="margin: 0; text-align: left;">💰 Mis Finanzas</h1>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button id="btn-modo-oscuro" title="Cambiar modo oscuro/claro" style="background: #f0ebe1; border: 1px solid #e3d7c7; border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer;">🌙</button>
+        <select id="selector-moneda" style="width: auto; padding: 6px 10px; font-size: 0.8rem; background: #f0ebe1; border: 1px solid #e3d7c7; border-radius: 8px; cursor: pointer;">
+          <option value="€">EUR (€)</option>
+          <option value="$">USD ($)</option>
+          <option value="£">GBP (£)</option>
+          <option value="¥">JPY (¥)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Banner de Alerta Semanal (Oculto por defecto) -->
+    <div id="banner-alerta-semanal" style="display: none; background-color: #f7e6d4; border: 1px solid #e8a38f; padding: 12px 14px; border-radius: 12px; margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <strong style="font-size: 0.85rem; color: #b05c43;">🔔 Revisión Semanal Pendiente</strong>
+        <button onclick="cerrarAlertaSemanal()" style="background: none; border: none; font-size: 0.9rem; cursor: pointer; color: #85756d;">✕</button>
+      </div>
+      <p id="texto-alerta-semanal" style="margin: 0; font-size: 0.8rem; color: #3d3532; line-height: 1.4;"></p>
+    </div>
+
+    <!-- Pestañas de navegación -->
+    <div class="pestanas">
+      <button class="pestana-btn activa" onclick="cambiarPestana('ingresos')">💵 Ingresos</button>
+      <button class="pestana-btn" onclick="cambiarPestana('recurrentes')">📌 G. Fijos</button>
+      <button class="pestana-btn" onclick="cambiarPestana('presupuesto')">🎯 Presu</button>
+      <button class="pestana-btn" onclick="cambiarPestana('registro')">➕ Registrar</button>
+      <button class="pestana-btn" onclick="cambiarPestana('dashboard')">📊 Panel</button>
+      <button class="pestana-btn" onclick="cambiarPestana('historial-ingresos')">📜 H.Ingr</button>
+      <button class="pestana-btn" onclick="cambiarPestana('historial')">📜 H.Gastos</button>
+    </div>
+
+    <!-- PESTAÑA: REGISTRAR INGRESOS -->
+    <div id="seccion-ingresos" class="seccion-contenido">
+      <div class="dashboard-contenedor">
+        <h2 id="titulo-form-ingreso">Registrar Nuevo Ingreso</h2>
+        <form id="ingreso-form">
+          <div class="form-group">
+            <label for="ing-importe">Importe (<span class="moneda-simbolo">€</span>)</label>
+            <input type="number" id="ing-importe" step="0.01" placeholder="Ej: 1200,00" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ing-descripcion">Concepto</label>
+            <input type="text" id="ing-descripcion" placeholder="Ej: Nómina mensual, venta impresora..." required>
+          </div>
+
+          <div class="form-group">
+            <label for="ing-categoria">Categoría</label>
+            <select id="ing-categoria" required>
+              <option value="" disabled selected>Selecciona una categoría</option>
+              <option value="Salario">💼 Salario</option>
+              <option value="Impresora 3D">🖨️ Impresora 3D</option>
+              <option value="Otra">✍️ Otra (escribir...)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="grupo-otra-ing" style="display: none;">
+            <label for="otra-categoria-ing">Especifica la categoría</label>
+            <input type="text" id="otra-categoria-ing" placeholder="Escribe tu categoría...">
+          </div>
+
+          <div class="form-group">
+            <label for="ing-fecha">Fecha</label>
+            <input type="date" id="ing-fecha" required>
+          </div>
+
+          <button type="submit" id="btn-submit-ingreso">Añadir Ingreso</button>
+          <button type="button" id="btn-cancelar-edicion-ingreso" style="display: none; background: #85756d; width: 100%; padding: 10px; color: white; border: none; border-radius: 10px; margin-top: 8px; font-weight: 600; cursor: pointer;">Cancelar Edición</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: GASTOS RECURRENTES / FIJOS -->
+    <div id="seccion-recurrentes" class="seccion-contenido" style="display: none;">
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2 id="titulo-form-recurrente">Nuevo Gasto Fijo / Recurrente</h2>
+        <form id="recurrente-form">
+          <div class="form-group">
+            <label for="rec-importe">Importe (<span class="moneda-simbolo">€</span>)</label>
+            <input type="number" id="rec-importe" step="0.01" placeholder="Ej: 50.00" required>
+          </div>
+          <div class="form-group">
+            <label for="rec-descripcion">Concepto</label>
+            <input type="text" id="rec-descripcion" placeholder="Ej: Alquiler, Netflix, Luz..." required>
+          </div>
+          <div class="form-group">
+            <label for="rec-categoria">Categoría</label>
+            <select id="rec-categoria" required>
+              <option value="" disabled selected>Selecciona categoría</option>
+              <option value="Ahorro casa">🏡 Ahorro casa</option>
+              <option value="Alimentación">🛒 Alimentación</option>
+              <option value="Educación">📚 Educación</option>
+              <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
+              <option value="Hogar">🏠 Hogar</option>
+              <option value="Imprevistos">🚨 Imprevistos</option>
+              <option value="Inversiones">📈 Inversiones</option>
+              <option value="Mascota">🐾 Mascota</option>
+              <option value="Ocio">🎟️ Ocio</option>
+              <option value="Regalos">🎁 Regalos</option>
+              <option value="Salud y bienestar">🩺 Salud y bienestar</option>
+              <option value="Transporte">🚗 Transporte</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="rec-subcategoria">Subcategoría</label>
+            <select id="rec-subcategoria" required>
+              <option value="" disabled selected>Primero selecciona categoría</option>
+            </select>
+          </div>
+          <div class="form-group" id="grupo-otra-sub-rec" style="display: none;">
+            <label for="otra-subcategoria-rec">Especifica la subcategoría</label>
+            <input type="text" id="otra-subcategoria-rec" placeholder="Escribe tu subcategoría...">
+          </div>
+          <div class="form-group">
+            <label for="rec-metodo">Método de Pago</label>
+            <select id="rec-metodo" required>
+              <option value="" disabled selected>Selecciona método</option>
+              <option value="Bizum">📲 Bizum</option>
+              <option value="Domiciliación">📄 Domiciliación</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+            </select>
+          </div>
+          <button type="submit" id="btn-submit-recurrente">Guardar Gasto Fijo</button>
+          <button type="button" id="btn-cancelar-recurrente" style="display: none; background: #85756d; width: 100%; padding: 10px; color: white; border: none; border-radius: 10px; margin-top: 8px; font-weight: 600; cursor: pointer;">Cancelar Edición</button>
+        </form>
+      </div>
+
+      <div class="dashboard-contenedor">
+        <h2>Mis Gastos Fijos Configurados</h2>
+        <ul id="lista-recurrentes" class="lista-gastos" style="margin-top: 10px;"></ul>
+        <button id="btn-aplicar-recurrentes" style="width: 100%; margin-top: 16px; background-color: #6b8e6b; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer;">Aplicar Fijos al Mes Actual 📥</button>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: PRESUPUESTO MENSUAL -->
+    <div id="seccion-presupuesto" class="seccion-contenido" style="display: none;">
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Gestión de Presupuesto</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0;">
+          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Límite Mensual Actual:</span>
+          <span id="presupuesto-actual-txt" style="font-size: 1.1rem; font-weight: 700; color: #b05c43;">500,00 €</span>
+        </div>
+        <button id="btn-cambiar-presupuesto" style="width: 100%; padding: 12px; background-color: #d18868; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Modificar Presupuesto</button>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Consumo del Mes en Curso</h2>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); margin: 12px 0 6px 0;">
+          <span id="budget-text">0,00 € / 500,00 €</span>
+          <span id="budget-percentage">0%</span>
+        </div>
+        <div style="width: 100%; height: 12px; background-color: var(--progress-bg); border-radius: 6px; overflow: hidden; margin-bottom: 12px;">
+          <div id="budget-progress-bar" style="height: 100%; width: 0%; background-color: #6b8e6b; transition: width 0.4s ease, background-color 0.4s ease;"></div>
+        </div>
+        <p id="budget-status-msg" style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin: 0;"></p>
+      </div>
+
+      <!-- Alertas y Recordatorios -->
+      <div class="dashboard-contenedor">
+        <h2>🔔 Alertas y Recordatorios</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">Activa las notificaciones para recibir avisos semanales de revisión.</p>
+        <button id="btn-activar-alertas" style="width: 100%; padding: 11px; background-color: #b1c2a1; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Activar Notificaciones 🔔</button>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: REGISTRO DE GASTOS -->
+    <div id="seccion-registro" class="seccion-contenido" style="display: none;">
+      <form id="gasto-form">
+        <div class="form-group">
+          <label for="importe">Importe (<span class="moneda-simbolo">€</span>)</label>
+          <input type="number" id="importe" step="0.01" placeholder="Ej: 45,50" required>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Concepto</label>
+          <input type="text" id="descripcion" placeholder="Ej: Compra en el supermercado" required>
+        </div>
+
+        <div class="form-group">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" required>
+            <option value="" disabled selected>Selecciona una categoría</option>
+            <option value="Ahorro casa">🏡 Ahorro casa</option>
+            <option value="Alimentación">🛒 Alimentación</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
+            <option value="Hogar">🏠 Hogar</option>
+            <option value="Imprevistos">🚨 Imprevistos</option>
+            <option value="Inversiones">📈 Inversiones</option>
+            <option value="Mascota">🐾 Mascota</option>
+            <option value="Ocio">🎟️ Ocio</option>
+            <option value="Regalos">🎁 Regalos</option>
+            <option value="Salud y bienestar">🩺 Salud y bienestar</option>
+            <option value="Transporte">🚗 Transporte</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="subcategoria">Subcategoría</label>
+          <select id="subcategoria" required>
+            <option value="" disabled selected>Primero selecciona una categoría</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="grupo-otra-sub" style="display: none;">
+          <label for="otra-subcategoria">Especifica la subcategoría</label>
+          <input type="text" id="otra-subcategoria" placeholder="Escribe tu subcategoría...">
+        </div>
+
+        <div class="form-group">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
+
+        <div class="form-group">
+          <label for="metodo-pago">Método de Pago</label>
+          <select id="metodo-pago" required>
+            <option value="" disabled selected>Selecciona el método</option>
+            <option value="Bizum">📲 Bizum</option>
+            <option value="Domiciliación">📄 Domiciliación</option>
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+          </select>
+        </div>
+
+        <!-- FOTO Y LECTOR IA DE RECIBOS -->
+        <div class="form-group">
+          <label for="foto-ticket">🧾 Foto del Ticket / Escáner IA (Opcional)</label>
+          <input type="file" id="foto-ticket" accept="image/*" capture="environment" style="padding: 8px;">
+          <small id="ocr-status" style="display: none; color: #b05c43; font-weight: 600; margin-top: 4px; display: block;">⏳ Leyendo ticket con IA... por favor espera.</small>
+          <div id="preview-ticket-container" style="margin-top: 8px; display: none; align-items: center; gap: 10px;">
+            <img id="preview-ticket-img" src="" alt="Vista previa" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color);">
+            <button type="button" id="btn-quitar-foto" style="background: #e8a38f; border: none; padding: 4px 8px; border-radius: 6px; color: white; font-size: 0.75rem; cursor: pointer; width: auto; margin: 0;">Quitar foto</button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-form">Añadir Gasto</button>
+        <button type="button" id="btn-cancelar-edicion" style="display: none; background: #85756d; width: 100%; padding: 10px; color: white; border: none; border-radius: 10px; margin-top: 8px; font-weight: 600; cursor: pointer;">Cancelar Edición</button>
+      </form>
+    </div>
+
+    <!-- PESTAÑA: DASHBOARD (PANEL) -->
+    <div id="seccion-dashboard" class="seccion-contenido" style="display: none;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-ano">Año</label>
+          <select id="filtro-ano">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-mes">Mes</label>
+          <select id="filtro-mes">
+            <option value="todos">Todos</option>
+            <option value="01">Enero</option>
+            <option value="02">Febrero</option>
+            <option value="03">Marzo</option>
+            <option value="04">Abril</option>
+            <option value="05">Mayo</option>
+            <option value="06">Junio</option>
+            <option value="07">Julio</option>
+            <option value="08">Agosto</option>
+            <option value="09">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-categoria">Categoría (Gastos)</label>
+          <select id="filtro-categoria">
+            <option value="todas">Todas</option>
+            <option value="Ahorro casa">🏡 Ahorro casa</option>
+            <option value="Alimentación">🛒 Alimentación</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
+            <option value="Hogar">🏠 Hogar</option>
+            <option value="Imprevistos">🚨 Imprevistos</option>
+            <option value="Inversiones">📈 Inversiones</option>
+            <option value="Mascota">🐾 Mascota</option>
+            <option value="Ocio">🎟️ Ocio</option>
+            <option value="Regalos">🎁 Regalos</option>
+            <option value="Salud y bienestar">🩺 Salud y bienestar</option>
+            <option value="Transporte">🚗 Transporte</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-metodo">Método de Pago</label>
+          <select id="filtro-metodo">
+            <option value="todos">Todos</option>
+            <option value="Bizum">📲 Bizum</option>
+            <option value="Domiciliación">📄 Domiciliación</option>
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Gastado (Filtrado)</h3>
+          <p id="resumen-anual">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Total Ingresos (Filtrado)</h3>
+          <p id="resumen-ingresos-filtrado">0,00 €</p>
+        </div>
+      </div>
+
+      <!-- 1. Ingresos vs. Gastos -->
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Ingresos vs. Gastos</h2>
+        <canvas id="graficoIngresosGastos"></canvas>
+      </div>
+
+      <!-- 2. Distribución ingresos -->
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Distribución ingresos</h2>
+        <canvas id="graficoFuentesIngresos"></canvas>
+      </div>
+
+      <!-- 3. Distribución gastos -->
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Distribución gastos</h2>
+        <canvas id="graficoCategorias"></canvas>
+      </div>
+
+      <!-- 4. Subcategorías gastos -->
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Subcategorías gastos</h2>
+        <canvas id="graficoSubcategorias"></canvas>
+      </div>
+
+      <!-- 5. Método pago -->
+      <div class="dashboard-contenedor">
+        <h2>Método pago</h2>
+        <canvas id="graficoMetodos"></canvas>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: HISTORIAL DE INGRESOS -->
+    <div id="seccion-historial-ingresos" class="seccion-contenido" style="display: none;">
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Ingresado</h3>
+          <p id="total-importe-ingresos">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Registros</h3>
+          <p id="total-registros-ingresos">0</p>
+        </div>
+      </div>
+
+      <!-- Filtro de Historial de Ingresos por Mes -->
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="filtro-historial-mes-ingresos">Filtrar por Mes</label>
+        <select id="filtro-historial-mes-ingresos">
+          <option value="todos">Todos los meses</option>
+        </select>
+      </div>
+
+      <!-- Buscador y Ordenación de Ingresos -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+        <div class="form-group" style="margin: 0;">
+          <label for="buscador-historial-ingresos">Buscar Concepto</label>
+          <input type="text" id="buscador-historial-ingresos" placeholder="Ej: Nómina..." style="padding: 9px 12px; font-size: 0.85rem;">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label for="orden-historial-ingresos">Ordenar por</label>
+          <select id="orden-historial-ingresos" style="padding: 9px 12px; font-size: 0.85rem;">
+            <option value="recientes">Más recientes</option>
+            <option value="antiguos">Más antiguos</option>
+            <option value="mayor-importe">Mayor importe</option>
+            <option value="menor-importe">Menor importe</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Historial de Ingresos</h2>
+      <ul id="lista-ingresos" class="lista-gastos"></ul>
+    </div>
+
+    <!-- PESTAÑA: HISTORIAL DE GASTOS -->
+    <div id="seccion-historial" class="seccion-contenido" style="display: none;">
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Gastado</h3>
+          <p id="total-importe">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Registros</h3>
+          <p id="total-registros">0</p>
+        </div>
+      </div>
+
+      <!-- Filtro de Historial por Mes -->
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="filtro-historial-mes">Filtrar por Mes</label>
+        <select id="filtro-historial-mes">
+          <option value="todos">Todos los meses</option>
+        </select>
+      </div>
+
+      <!-- Buscador y Ordenación -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+        <div class="form-group" style="margin: 0;">
+          <label for="buscador-historial">Buscar Concepto</label>
+          <input type="text" id="buscador-historial" placeholder="Ej: Mercadona..." style="padding: 9px 12px; font-size: 0.85rem;">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label for="orden-historial">Ordenar por</label>
+          <select id="orden-historial" style="padding: 9px 12px; font-size: 0.85rem;">
+            <option value="recientes">Más recientes</option>
+            <option value="antiguos">Más antiguos</option>
+            <option value="mayor-importe">Mayor importe</option>
+            <option value="menor-importe">Menor importe</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Historial de Gastos</h2>
+      <ul id="lista-gastos" class="lista-gastos"></ul>
+
+      <!-- Opciones de Copia de Seguridad -->
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color); display: flex; gap: 8px;">
+        <button id="btn-exportar" style="flex: 1; background: #d5b99b; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📦 Exportar Copia</button>
+        <button id="btn-importar-trigger" style="flex: 1; background: #b1c2a1; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📥 Importar Copia</button>
+        <input type="file" id="input-importar" accept=".json" style="display: none;">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL PARA VER IMAGEN DE TICKET -->
+  <div id="modal-ticket" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: var(--bg-container); padding: 16px; border-radius: 14px; max-width: 90%; max-height: 90%; text-align: center; position: relative; border: 1px solid var(--border-color);">
+      <button onclick="cerrarModalTicket()" style="position: absolute; top: 10px; right: 10px; background: #e8a38f; border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold;">✕</button>
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-title);">Comprobante de Gasto</h3>
+      <img id="img-modal-ticket" src="" alt="Ticket" style="max-width: 100%; max-height: 70vh; border-radius: 8px; object-fit: contain;">
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
