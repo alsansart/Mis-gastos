@@ -1,0 +1,208 @@
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background-color: #f7f4ee;
+  color: #3d3532;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.app-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(115, 85, 70, 0.05);
+  border: 1px solid #eadecf;
+}
+
+h1 {
+  text-align: center;
+  color: #2b2422;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  margin-bottom: 24px;
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #5c4f4a;
+  margin-bottom: 12px;
+}
+
+.pestanas {
+  display: flex;
+  background: #f0ebe1;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.pestana-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  font-size: 0.82rem;
+  color: #85756d;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.pestana-btn.activa {
+  background: #ffffff;
+  color: #2b2422;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(115, 85, 70, 0.08);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #85756d;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input, select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #e3d7c7;
+  background-color: #faf7f2;
+  border-radius: 10px;
+  box-sizing: border-box;
+  font-size: 0.95rem;
+  color: #3d3532;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #d18868;
+  background-color: #ffffff;
+}
+
+button[type="submit"] {
+  width: 100%;
+  padding: 13px;
+  background-color: #d18868;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: background-color 0.2s;
+}
+
+button[type="submit"]:hover {
+  background-color: #bd7656;
+}
+
+.resumen {
+  background-color: #f7ede4;
+  border: 1px solid #ebdcd0;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 24px 0;
+  text-align: center;
+}
+
+.resumen h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #8c533e;
+}
+
+.tarjetas-resumen {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tarjeta-caja {
+  flex: 1;
+  background: #faf7f2;
+  border: 1px solid #eadecf;
+  padding: 14px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.tarjeta-caja h3 {
+  margin: 0 0 6px 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #85756d;
+}
+
+.tarjeta-caja p {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #3d3532;
+}
+
+.dashboard-contenedor {
+  background: #faf7f2;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #eadecf;
+}
+
+canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.lista-gastos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item-gasto {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #faf7f2;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid #d18868;
+  border-top: 1px solid #eadecf;
+  border-right: 1px solid #eadecf;
+  border-bottom: 1px solid #eadecf;
+}
+
+.item-info strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #3d3532;
+  margin-bottom: 2px;
+}
+
+.item-info small {
+  color: #85756d;
+  font-size: 0.75rem;
+}
+
+.item-importe {
+  font-weight: 600;
+  color: #b05c43;
+}

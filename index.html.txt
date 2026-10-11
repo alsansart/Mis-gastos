@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Gastos</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <h1>💰 Mis Gastos</h1>
+
+    <!-- Pestañas de navegación -->
+    <div class="pestanas">
+      <button class="pestana-btn activa" onclick="cambiarPestana('registro')">📝 Registrar</button>
+      <button class="pestana-btn" onclick="cambiarPestana('dashboard')">📊 Dashboard</button>
+      <button class="pestana-btn" onclick="cambiarPestana('historial')">📋 Historial</button>
+    </div>
+
+    <!-- PESTAÑA 1: REGISTRO -->
+    <div id="seccion-registro" class="seccion-contenido">
+      <form id="gasto-form">
+        <div class="form-group">
+          <label for="importe">Importe (€)</label>
+          <input type="number" id="importe" step="0.01" placeholder="Ej: 45,50" required>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Concepto</label>
+          <input type="text" id="descripcion" placeholder="Ej: Compra en el supermercado" required>
+        </div>
+
+        <div class="form-group">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" required>
+            <option value="" disabled selected>Selecciona una categoría</option>
+            <option value="Ahorro casa">🏡 Ahorro casa</option>
+            <option value="Alimentación">🛒 Alimentación</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
+            <option value="Hogar">🏠 Hogar</option>
+            <option value="Imprevistos">🚨 Imprevistos</option>
+            <option value="Inversiones">📈 Inversiones</option>
+            <option value="Mascota">🐾 Mascota</option>
+            <option value="Ocio">🎟️ Ocio</option>
+            <option value="Regalos">🎁 Regalos</option>
+            <option value="Salud y bienestar">🩺 Salud y bienestar</option>
+            <option value="Transporte">🚗 Transporte</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="subcategoria">Subcategoría</label>
+          <select id="subcategoria" required>
+            <option value="" disabled selected>Primero selecciona una categoría</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="grupo-otra-sub" style="display: none;">
+          <label for="otra-subcategoria">Especifica la subcategoría</label>
+          <input type="text" id="otra-subcategoria" placeholder="Escribe tu subcategoría...">
+        </div>
+
+        <div class="form-group">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
+
+        <div class="form-group">
+          <label for="metodo-pago">Método de Pago</label>
+          <select id="metodo-pago" required>
+            <option value="" disabled selected>Selecciona el método</option>
+            <option value="Bizum">📲 Bizum</option>
+            <option value="Domiciliación">📄 Domiciliación</option>
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+          </select>
+        </div>
+
+        <button type="submit" id="btn-submit-form">Añadir Gasto</button>
+        <button type="button" id="btn-cancelar-edicion" style="display: none; background: #85756d; width: 100%; padding: 10px; color: white; border: none; border-radius: 10px; margin-top: 8px; font-weight: 600; cursor: pointer;">Cancelar Edición</button>
+      </form>
+    </div>
+
+    <!-- PESTAÑA 2: DASHBOARD -->
+    <div id="seccion-dashboard" class="seccion-contenido" style="display: none;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-ano">Año</label>
+          <select id="filtro-ano">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-mes">Mes</label>
+          <select id="filtro-mes">
+            <option value="todos">Todos</option>
+            <option value="01">Enero</option>
+            <option value="02">Febrero</option>
+            <option value="03">Marzo</option>
+            <option value="04">Abril</option>
+            <option value="05">Mayo</option>
+            <option value="06">Junio</option>
+            <option value="07">Julio</option>
+            <option value="08">Agosto</option>
+            <option value="09">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-categoria">Categoría</label>
+          <select id="filtro-categoria">
+            <option value="todas">Todas</option>
+            <option value="Ahorro casa">🏡 Ahorro casa</option>
+            <option value="Alimentación">🛒 Alimentación</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
+            <option value="Hogar">🏠 Hogar</option>
+            <option value="Imprevistos">🚨 Imprevistos</option>
+            <option value="Inversiones">📈 Inversiones</option>
+            <option value="Mascota">🐾 Mascota</option>
+            <option value="Ocio">🎟️ Ocio</option>
+            <option value="Regalos">🎁 Regalos</option>
+            <option value="Salud y bienestar">🩺 Salud y bienestar</option>
+            <option value="Transporte">🚗 Transporte</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="filtro-metodo">Método de Pago</label>
+          <select id="filtro-metodo">
+            <option value="todos">Todos</option>
+            <option value="Bizum">📲 Bizum</option>
+            <option value="Domiciliación">📄 Domiciliación</option>
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Filtrado</h3>
+          <p id="resumen-anual">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Mes Actual</h3>
+          <p id="resumen-mes">0,00 €</p>
+        </div>
+      </div>
+
+      <div class="dashboard-contenedor">
+        <h2>Anual</h2>
+        <canvas id="graficoMeses"></canvas>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-top: 20px;">
+        <h2>Categoría</h2>
+        <canvas id="graficoCategorias"></canvas>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-top: 20px;">
+        <h2>Subcategoría</h2>
+        <canvas id="graficoSubcategorias"></canvas>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-top: 20px;">
+        <h2>Método de Pago</h2>
+        <canvas id="graficoMetodos"></canvas>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: HISTORIAL -->
+    <div id="seccion-historial" class="seccion-contenido" style="display: none;">
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Gastado</h3>
+          <p id="total-importe">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Registros</h3>
+          <p id="total-registros">0</p>
+        </div>
+      </div>
+
+      <h2>Historial de Gastos</h2>
+      <ul id="lista-gastos" class="lista-gastos"></ul>
+
+      <!-- Opciones de Copia de Seguridad -->
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed #eadecf; display: flex; gap: 8px;">
+        <button id="btn-exportar" style="flex: 1; background: #d5b99b; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📦 Exportar Copia</button>
+        <button id="btn-importar-trigger" style="flex: 1; background: #b1c2a1; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📥 Importar Copia</button>
+        <input type="file" id="input-importar" accept=".json" style="display: none;">
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
