@@ -1321,19 +1321,54 @@ document.addEventListener('DOMContentLoaded', function() {
     window.actualizarApp();
   };
 
-  // Funciones y eventos globales para Exportar e Importar Copias de Seguridad en ambas pestañas
-  function exportarCopiaSeguridad() {
-    const data = {
-      gastos: JSON.parse(localStorage.getItem('gastos')) || [],
-      ingresos: JSON.parse(localStorage.getItem('ingresos')) || [],
-      gastosRecurrentes: JSON.parse(localStorage.getItem('gastosRecurrentes')) || [],
-      monthlyBudget: localStorage.getItem('monthlyBudget') || '500',
-      monedaApp: localStorage.getItem('monedaApp') || '€'
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+  // Funciones independientes para Exportar a Excel (CSV compatible)
+  function exportarIngresosExcel() {
+    if (ingresos.length === 0) {
+      alert("No hay ingresos registrados para exportar.");
+      return;
+    }
+    
+    let csvContent = "\uFEFFFecha;Concepto;Categoría;Importe\n";
+    ingresos.forEach(ing => {
+      const fecha = ing.fecha || '';
+      const descripcion = `"${(ing.descripcion || '').replace(/"/g, '""')}"`;
+      const categoria = `"${(ing.categoria || '').replace(/"/g, '""')}"`;
+      const importe = ing.importe ? ing.importe.toString().replace('.', ',') : '0';
+      csvContent += `${fecha};${descripcion};${categoria};${importe}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `copia_finanzas_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("href", url);
+    downloadAnchor.setAttribute("download", `ingresos_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function exportarGastosExcel() {
+    if (gastos.length === 0) {
+      alert("No hay gastos registrados para exportar.");
+      return;
+    }
+
+    let csvContent = "\uFEFFFecha;Concepto;Categoría;Subcategoría;Método de Pago;Importe\n";
+    gastos.forEach(g => {
+      const fecha = g.fecha || '';
+      const descripcion = `"${(g.descripcion || '').replace(/"/g, '""')}"`;
+      const categoria = `"${(g.categoria || '').replace(/"/g, '""')}"`;
+      const subcategoria = `"${(g.subcategoria || '').replace(/"/g, '""')}"`;
+      const metodoPago = `"${(g.metodoPago || '').replace(/"/g, '""')}"`;
+      const importe = g.importe ? g.importe.toString().replace('.', ',') : '0';
+      csvContent += `${fecha};${descripcion};${categoria};${subcategoria};${metodoPago};${importe}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", url);
+    downloadAnchor.setAttribute("download", `gastos_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -1364,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnExportar = document.getElementById('btn-exportar');
   const btnImportarTrigger = document.getElementById('btn-importar-trigger');
   const inputImportar = document.getElementById('input-importar');
-  if (btnExportar) btnExportar.addEventListener('click', exportarCopiaSeguridad);
+  if (btnExportar) btnExportar.addEventListener('click', exportarGastosExcel);
   if (btnImportarTrigger && inputImportar) {
     btnImportarTrigger.addEventListener('click', () => inputImportar.click());
     inputImportar.addEventListener('change', importarCopiaSeguridad);
@@ -1374,7 +1409,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnExportarIng = document.getElementById('btn-exportar-ingresos');
   const btnImportarTriggerIng = document.getElementById('btn-importar-trigger-ingresos');
   const inputImportarIng = document.getElementById('input-importar-ingresos');
-  if (btnExportarIng) btnExportarIng.addEventListener('click', exportarCopiaSeguridad);
+  if (btnExportarIng) btnExportarIng.addEventListener('click', exportarIngresosExcel);
   if (btnImportarTriggerIng && inputImportarIng) {
     btnImportarTriggerIng.addEventListener('click', () => inputImportarIng.click());
     inputImportarIng.addEventListener('change', importarCopiaSeguridad);
