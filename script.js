@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!ultimaRevision || (ahora - parseInt(ultimaRevision, 10)) >= sieteDiasMs) {
       const haceSieteDias = new Date(ahora - sieteDiasMs);
       const gastosUltimaSemana = gastos.filter(g => {
-        if (!g.fecha || g.categoria === 'Inversiones') return false;
+        if (!g.fecha || g.categoria === 'Inversiones' || g.esGastoFijo) return false;
         const fechaGasto = new Date(g.fecha);
         return fechaGasto >= haceSieteDias && fechaGasto <= new Date();
       });
@@ -1047,14 +1047,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (presupuestoActualTxt) presupuestoActualTxt.textContent = monthlyBudget.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + monedaActual;
 
     const mesActualStr = new Date().toISOString().slice(0, 7);
-    const descripcionesRecurrentes = new Set(gastosRecurrentes.map(r => `${r.descripcion}_${r.importe}`));
 
+    // Solo cuenta gastos del mes actual que NO sean inversiones y NO estén marcados como gastos fijos automáticos
     const gastosMesActual = gastos.filter(g => {
-      if (!g.fecha || !g.fecha.startsWith(mesActualStr) || g.categoria === 'Inversiones') return false;
-      const claveGasto = `${g.descripcion}_${g.importe}`;
-      if (descripcionesRecurrentes.has(claveGasto)) {
-        return false; // Excluye los gastos fijos automáticos
-      }
+      if (!g.fecha || !g.fecha.startsWith(mesActualStr)) return false;
+      if (g.categoria === 'Inversiones') return false;
+      if (g.esGastoFijo) return false; // Excluye con total seguridad los fijos aplicados
       return true;
     });
 
@@ -1196,7 +1194,8 @@ document.addEventListener('DOMContentLoaded', function() {
           metodoPago: rec.metodoPago,
           categoria: rec.categoria,
           subcategoria: rec.subcategoria || 'General',
-          fotoTicket: null
+          fotoTicket: null,
+          esGastoFijo: true // Marcado explícito para que la barra de presupuesto lo ignore
         });
       });
       localStorage.setItem('gastos', JSON.stringify(gastos));
@@ -1672,7 +1671,8 @@ document.addEventListener('DOMContentLoaded', function() {
         metodoPago: metodoPagoInput ? metodoPagoInput.value : '',
         categoria: categoriaInput ? categoriaInput.value : '',
         subcategoria: subcatFinal,
-        fotoTicket: imagenTicketBase64
+        fotoTicket: imagenTicketBase64,
+        esGastoFijo: false // Es un gasto puntual manual
       };
 
       if (modoEdicionIndex !== null) {
