@@ -5,8 +5,10 @@ window.cambiarPestana = function(pestana) {
   const secRegistro = document.getElementById('seccion-registro');
   const secRecurrentes = document.getElementById('seccion-recurrentes');
   const secMetas = document.getElementById('seccion-metas');
+  const secInversiones = document.getElementById('seccion-inversiones');
   const secDashboard = document.getElementById('seccion-dashboard');
   const secHistorialIngresos = document.getElementById('seccion-historial-ingresos');
+  const secHistorialInversiones = document.getElementById('seccion-historial-inversiones');
   const secHistorial = document.getElementById('seccion-historial');
 
   if (secPresupuesto) secPresupuesto.style.display = 'none';
@@ -14,8 +16,10 @@ window.cambiarPestana = function(pestana) {
   if (secRegistro) secRegistro.style.display = 'none';
   if (secRecurrentes) secRecurrentes.style.display = 'none';
   if (secMetas) secMetas.style.display = 'none';
+  if (secInversiones) secInversiones.style.display = 'none';
   if (secDashboard) secDashboard.style.display = 'none';
   if (secHistorialIngresos) secHistorialIngresos.style.display = 'none';
+  if (secHistorialInversiones) secHistorialInversiones.style.display = 'none';
   if (secHistorial) secHistorial.style.display = 'none';
 
   btns.forEach(b => b.classList.remove('activa'));
@@ -31,23 +35,31 @@ window.cambiarPestana = function(pestana) {
     if (btns[2]) btns[2].classList.add('activa');
     if (secPresupuesto) secPresupuesto.style.display = 'block';
     if (window.actualizarPresupuestoUI) window.actualizarPresupuestoUI();
-  } else if (pestana === 'metas') {
+  } else if (pestana === 'registro') {
     if (btns[3]) btns[3].classList.add('activa');
+    if (secRegistro) secRegistro.style.display = 'block';
+  } else if (pestana === 'metas') {
+    if (btns[4]) btns[4].classList.add('activa');
     if (secMetas) secMetas.style.display = 'block';
     if (window.actualizarMetasUI) window.actualizarMetasUI();
-  } else if (pestana === 'registro') {
-    if (btns[4]) btns[4].classList.add('activa');
-    if (secRegistro) secRegistro.style.display = 'block';
-  } else if (pestana === 'dashboard') {
+  } else if (pestana === 'inversiones') {
     if (btns[5]) btns[5].classList.add('activa');
+    if (secInversiones) secInversiones.style.display = 'block';
+    if (window.actualizarInversionesUI) window.actualizarInversionesUI();
+  } else if (pestana === 'dashboard') {
+    if (btns[6]) btns[6].classList.add('activa');
     if (secDashboard) secDashboard.style.display = 'block';
     if (window.actualizarDashboard) window.actualizarDashboard();
   } else if (pestana === 'historial-ingresos') {
-    if (btns[6]) btns[6].classList.add('activa');
+    if (btns[7]) btns[7].classList.add('activa');
     if (secHistorialIngresos) secHistorialIngresos.style.display = 'block';
     if (window.actualizarIngresosUI) window.actualizarIngresosUI();
+  } else if (pestana === 'historial-inversiones') {
+    if (btns[8]) btns[8].classList.add('activa');
+    if (secHistorialInversiones) secHistorialInversiones.style.display = 'block';
+    if (window.actualizarInversionesHistorialUI) window.actualizarInversionesHistorialUI();
   } else if (pestana === 'historial') {
-    if (btns[7]) btns[7].classList.add('activa');
+    if (btns[9]) btns[9].classList.add('activa');
     if (secHistorial) secHistorial.style.display = 'block';
     if (window.actualizarApp) window.actualizarApp();
   }
@@ -88,6 +100,22 @@ document.addEventListener('DOMContentLoaded', function() {
   const metaTitulo = document.getElementById('meta-titulo');
   const metaObjetivo = document.getElementById('meta-objetivo');
   const listaMetas = document.getElementById('lista-metas');
+  const tituloFormMeta = document.getElementById('titulo-form-meta');
+  const btnSubmitMeta = document.getElementById('btn-submit-meta');
+  const btnCancelarMeta = document.getElementById('btn-cancelar-meta');
+  let modoEdicionMetaIndex = null;
+
+  // Elementos de Inversiones
+  const totalInvertidoTxt = document.getElementById('total-invertido-txt');
+  const totalAportacionesInv = document.getElementById('total-aportaciones-inv');
+  const listaInversiones = document.getElementById('lista-inversiones');
+  const totalImporteInversiones = document.getElementById('total-importe-inversiones');
+  const totalRegistrosInversiones = document.getElementById('total-registros-inversiones');
+  const filtroHistorialMesInversiones = document.getElementById('filtro-historial-mes-inversiones');
+  const buscadorHistorialInversiones = document.getElementById('buscador-historial-inversiones');
+  const ordenHistorialInversiones = document.getElementById('orden-historial-inversiones');
+  let graficoInversionesDistInstance = null;
+  let graficoInversionesEvolucionInstance = null;
 
   // Elementos de Foto Ticket e IA OCR
   const fotoTicketInput = document.getElementById('foto-ticket');
@@ -186,7 +214,10 @@ document.addEventListener('DOMContentLoaded', function() {
       div.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <strong style="font-size: 0.95rem; color: var(--text-title);">🎯 ${meta.titulo}</strong>
-          <button onclick="eliminarMeta(${idx})" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+          <div style="display: flex; gap: 4px;">
+            <button onclick="prepararEdicionMeta(${idx})" style="background: #e5b060; border: none; padding: 4px 6px; border-radius: 6px; color: white; cursor: pointer; font-size: 0.75rem;">✏️</button>
+            <button onclick="eliminarMeta(${idx})" style="background: #e8a38f; border: none; padding: 4px 6px; border-radius: 6px; color: white; cursor: pointer; font-size: 0.75rem;">🗑️</button>
+          </div>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
           <span>${acumulado.toLocaleString('es-ES', { minimumFractionDigits: 2 })} / ${objetivo.toLocaleString('es-ES', { minimumFractionDigits: 2 })} ${monedaActual}</span>
@@ -212,20 +243,241 @@ document.addEventListener('DOMContentLoaded', function() {
   if (metaForm) {
     metaForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      metas.push({
+      const metaData = {
         titulo: metaTitulo.value.trim(),
         objetivo: metaObjetivo.value
-      });
+      };
+
+      if (modoEdicionMetaIndex !== null) {
+        metas[modoEdicionMetaIndex] = metaData;
+      } else {
+        metas.push(metaData);
+      }
+
+      resetearFormularioMeta();
       localStorage.setItem('metasAhorro', JSON.stringify(metas));
-      metaForm.reset();
       window.actualizarMetasUI();
     });
+  }
+
+  window.prepararEdicionMeta = function(idx) {
+    const meta = metas[idx];
+    modoEdicionMetaIndex = idx;
+    if (metaTitulo) metaTitulo.value = meta.titulo;
+    if (metaObjetivo) metaObjetivo.value = meta.objetivo;
+    if (tituloFormMeta) tituloFormMeta.textContent = 'Editar Meta';
+    if (btnSubmitMeta) btnSubmitMeta.textContent = 'Guardar Cambios';
+    if (btnCancelarMeta) btnCancelarMeta.style.display = 'block';
+  };
+
+  function resetearFormularioMeta() {
+    modoEdicionMetaIndex = null;
+    if (metaForm) metaForm.reset();
+    if (tituloFormMeta) tituloFormMeta.textContent = 'Crear Nueva Meta';
+    if (btnSubmitMeta) btnSubmitMeta.textContent = 'Crear Meta';
+    if (btnCancelarMeta) btnCancelarMeta.style.display = 'none';
+  }
+
+  if (btnCancelarMeta) {
+    btnCancelarMeta.addEventListener('click', resetearFormularioMeta);
   }
 
   window.eliminarMeta = function(idx) {
     metas.splice(idx, 1);
     localStorage.setItem('metasAhorro', JSON.stringify(metas));
     window.actualizarMetasUI();
+  };
+
+  // Lógica de Inversiones UI y Gráficos
+  window.actualizarInversionesUI = function() {
+    const gastosInversiones = gastos.filter(g => g.categoria === 'Inversiones');
+    const totalInvVal = gastosInversiones.reduce((acc, g) => acc + parseFloat(g.importe), 0);
+
+    if (totalInvertidoTxt) totalInvertidoTxt.textContent = totalInvVal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + monedaActual;
+    if (totalAportacionesInv) totalAportacionesInv.textContent = gastosInversiones.length;
+
+    const paletaPastelClara = [
+      'rgba(247, 215, 178, 0.85)',
+      'rgba(232, 163, 143, 0.8)',
+      'rgba(215, 184, 156, 0.85)',
+      'rgba(177, 194, 161, 0.8)',
+      'rgba(245, 203, 152, 0.85)'
+    ];
+
+    const elGraficoInvDist = document.getElementById('graficoInversionesDist');
+    if (elGraficoInvDist && typeof Chart !== 'undefined') {
+      const ctxID = elGraficoInvDist.getContext('2d');
+      const porSubInv = {};
+      gastosInversiones.forEach(g => {
+        const sub = g.subcategoria || 'General';
+        porSubInv[sub] = (porSubInv[sub] || 0) + parseFloat(g.importe);
+      });
+
+      if (graficoInversionesDistInstance) graficoInversionesDistInstance.destroy();
+      graficoInversionesDistInstance = new Chart(ctxID, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(porSubInv),
+          datasets: [{
+            data: Object.values(porSubInv),
+            backgroundColor: paletaPastelClara.slice(0, Object.keys(porSubInv).length),
+            borderWidth: 2,
+            borderColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#292320' : '#faf7f2'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                  return ` ${label}: ${value.toLocaleString('es-ES', { minimumFractionDigits: 2 })} ${monedaActual} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const elGraficoInvEvol = document.getElementById('graficoInversionesEvolucion');
+    if (elGraficoInvEvol && typeof Chart !== 'undefined') {
+      const ctxIE = elGraficoInvEvol.getContext('2d');
+      const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const valoresMesesInv = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+      gastosInversiones.forEach(g => {
+        if (g.fecha) {
+          const mIndex = parseInt(g.fecha.split('-')[1], 10) - 1;
+          if (mIndex >= 0 && mIndex <= 11) {
+            valoresMesesInv[mIndex] += parseFloat(g.importe);
+          }
+        }
+      });
+
+      if (graficoInversionesEvolucionInstance) graficoInversionesEvolucionInstance.destroy();
+      graficoInversionesEvolucionInstance = new Chart(ctxIE, {
+        type: 'bar',
+        data: {
+          labels: nombresMeses,
+          datasets: [{
+            label: `Aportaciones (${monedaActual})`,
+            data: valoresMesesInv,
+            backgroundColor: 'rgba(177, 194, 161, 0.85)',
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: 'rgba(155, 174, 139, 1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { display: false } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+  };
+
+  function actualizarFiltroInversionesMeses() {
+    if (!filtroHistorialMesInversiones) return;
+    const mesesSet = new Set();
+    gastos.filter(g => g.categoria === 'Inversiones').forEach(g => {
+      if (g.fecha) mesesSet.add(g.fecha.substring(0, 7));
+    });
+
+    const mesActualVal = filtroHistorialMesInversiones.value;
+    filtroHistorialMesInversiones.innerHTML = '<option value="todos">Todos los meses</option>';
+    
+    Array.from(mesesSet).sort().reverse().forEach(ym => {
+      const partes = ym.split('-');
+      const year = partes[0];
+      const monthIdx = parseInt(partes[1], 10) - 1;
+      const nombreMesStr = nombresMesesNombres[monthIdx] || monthIdx;
+      
+      const opt = document.createElement('option');
+      opt.value = ym;
+      opt.textContent = `${nombreMesStr} ${year}`;
+      filtroHistorialMesInversiones.appendChild(opt);
+    });
+
+    if (Array.from(mesesSet).includes(mesActualVal) || mesActualVal === 'todos') {
+      filtroHistorialMesInversiones.value = mesActualVal;
+    }
+  }
+
+  if (buscadorHistorialInversiones) buscadorHistorialInversiones.addEventListener('input', () => window.actualizarInversionesHistorialUI());
+  if (filtroHistorialMesInversiones) filtroHistorialMesInversiones.addEventListener('change', () => window.actualizarInversionesHistorialUI());
+  if (ordenHistorialInversiones) ordenHistorialInversiones.addEventListener('change', () => window.actualizarInversionesHistorialUI());
+
+  window.actualizarInversionesHistorialUI = function() {
+    actualizarFiltroInversionesMeses();
+    if (!listaInversiones) return;
+    listaInversiones.innerHTML = '';
+
+    const mesSelInv = filtroHistorialMesInversiones ? filtroHistorialMesInversiones.value : 'todos';
+    const txtBusqInv = buscadorHistorialInversiones ? buscadorHistorialInversiones.value.toLowerCase().trim() : '';
+    const ordenInv = ordenHistorialInversiones ? ordenHistorialInversiones.value : 'recientes';
+
+    let invFiltradas = gastos.filter(g => {
+      if (g.categoria !== 'Inversiones') return false;
+      const cumpleMes = (mesSelInv === 'todos' || (g.fecha && g.fecha.startsWith(mesSelInv)));
+      const cumpleBusq = (!txtBusqInv || (g.descripcion && g.descripcion.toLowerCase().includes(txtBusqInv)));
+      return cumpleMes && cumpleBusq;
+    });
+
+    invFiltradas.sort((a, b) => {
+      if (ordenInv === 'recientes') return new Date(b.fecha) - new Date(a.fecha);
+      if (ordenInv === 'antiguos') return new Date(a.fecha) - new Date(b.fecha);
+      if (ordenInv === 'mayor-importe') return parseFloat(b.importe) - parseFloat(a.importe);
+      if (ordenInv === 'menor-importe') return parseFloat(a.importe) - parseFloat(b.importe);
+      return 0;
+    });
+
+    let totalInvHist = 0;
+    if (invFiltradas.length === 0) {
+      listaInversiones.innerHTML = '<li style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 10px;">No hay aportaciones de inversión registradas.</li>';
+      if (totalImporteInversiones) totalImporteInversiones.textContent = '0,00 ' + monedaActual;
+      if (totalRegistrosInversiones) totalRegistrosInversiones.textContent = '0';
+      return;
+    }
+
+    invFiltradas.forEach(gasto => {
+      const indexReal = gastos.indexOf(gasto);
+      totalInvHist += parseFloat(gasto.importe);
+
+      let fechaBonita = '';
+      if (gasto.fecha) {
+        const partes = gasto.fecha.split('-');
+        fechaBonita = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+
+      const li = document.createElement('li');
+      li.className = 'item-gasto';
+      li.style.borderLeft = '3px solid #b1c2a1';
+      li.innerHTML = `
+        <div class="item-info">
+          <strong>${gasto.descripcion}</strong>
+          <small>${fechaBonita} - 📈 Inversiones › ${gasto.subcategoria}</small>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span class="item-importe" style="color: #6b8e6b;">+${Number(gasto.importe).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaActual}</span>
+          <button onclick="prepararEdicion(${indexReal})" style="background: #e5b060; width: auto; padding: 5px 8px; margin: 0; font-size: 0.8rem; border-radius: 6px; border: none; color: white; cursor: pointer;">✏️</button>
+          <button onclick="eliminarGasto(${indexReal})" style="background: #e8a38f; width: auto; padding: 5px 8px; margin: 0; font-size: 0.8rem; border-radius: 6px; border: none; color: white; cursor: pointer;">🗑️</button>
+        </div>
+      `;
+      listaInversiones.appendChild(li);
+    });
+
+    if (totalImporteInversiones) totalImporteInversiones.textContent = totalInvHist.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + monedaActual;
+    if (totalRegistrosInversiones) totalRegistrosInversiones.textContent = invFiltradas.length;
   };
 
   if (ingCategoria) {
@@ -549,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!ultimaRevision || (ahora - parseInt(ultimaRevision, 10)) >= sieteDiasMs) {
       const haceSieteDias = new Date(ahora - sieteDiasMs);
       const gastosUltimaSemana = gastos.filter(g => {
-        if (!g.fecha) return false;
+        if (!g.fecha || g.categoria === 'Inversiones') return false;
         const fechaGasto = new Date(g.fecha);
         return fechaGasto >= haceSieteDias && fechaGasto <= new Date();
       });
@@ -611,6 +863,8 @@ document.addEventListener('DOMContentLoaded', function() {
       window.actualizarApp();
       window.actualizarRecurrentesUI();
       window.actualizarIngresosUI();
+      window.actualizarInversionesUI();
+      window.actualizarInversionesHistorialUI();
     });
   }
 
@@ -793,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (presupuestoActualTxt) presupuestoActualTxt.textContent = monthlyBudget.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + monedaActual;
 
     const mesActualStr = new Date().toISOString().slice(0, 7);
-    const gastosMesActual = gastos.filter(g => g.fecha && g.fecha.startsWith(mesActualStr));
+    const gastosMesActual = gastos.filter(g => g.fecha && g.fecha.startsWith(mesActualStr) && g.categoria !== 'Inversiones');
     const totalMesVal = gastosMesActual.reduce((acc, g) => acc + parseFloat(g.importe), 0);
 
     if (budgetTextEl) budgetTextEl.textContent = `${totalMesVal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaActual} / ${monthlyBudget.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaActual}`;
@@ -944,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function actualizarFiltroAnos() {
     if (!filtroAno) return;
-    const anosGastos = gastos.map(g => g.fecha ? g.fecha.split('-')[0] : new Date().getFullYear());
+    const anosGastos = gastos.filter(g => g.categoria !== 'Inversiones').map(g => g.fecha ? g.fecha.split('-')[0] : new Date().getFullYear());
     const anosIngresos = ingresos.map(i => i.fecha ? i.fecha.split('-')[0] : new Date().getFullYear());
     const anos = [...new Set([...anosGastos, ...anosIngresos])].sort().reverse();
     const anoActualSeleccionado = filtroAno.value;
@@ -964,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function actualizarFiltroHistorialMeses() {
     if (!filtroHistorialMes) return;
     const mesesSet = new Set();
-    gastos.forEach(g => {
+    gastos.filter(g => g.categoria !== 'Inversiones').forEach(g => {
       if (g.fecha) {
         mesesSet.add(g.fecha.substring(0, 7));
       }
@@ -1005,7 +1259,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const catSel = filtroCategoria ? filtroCategoria.value : 'todas';
     const metodoSel = filtroMetodo ? filtroMetodo.value : 'todos';
 
+    // Excluimos la categoría Inversiones del panel general de gastos
     let gastosFiltrados = gastos.filter(g => {
+      if (g.categoria === 'Inversiones') return false;
       if (!g.fecha) return true;
       const partes = g.fecha.split('-');
       const partesAno = partes[0];
@@ -1045,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-    // 1. Ingresos vs. Gastos
+    // 1. Ingresos vs. Gastos (Puros, sin Inversiones)
     const elGraficoIngGastos = document.getElementById('graficoIngresosGastos');
     if (elGraficoIngGastos && typeof Chart !== 'undefined') {
       const ctxIG = elGraficoIngGastos.getContext('2d');
@@ -1284,7 +1540,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const textoBusqueda = buscadorHistorial ? buscadorHistorial.value.toLowerCase().trim() : '';
     const criterioOrden = ordenHistorial ? ordenHistorial.value : 'recientes';
 
+    // Excluimos Inversiones del historial de gastos cotidianos
     let gastosMostrados = gastos.filter(g => {
+      if (g.categoria === 'Inversiones') return false;
       const cumpleMes = (mesHistorialSeleccionado === 'todos' || (g.fecha && g.fecha.startsWith(mesHistorialSeleccionado)));
       const cumpleBusqueda = (!textoBusqueda || (g.descripcion && g.descripcion.toLowerCase().includes(textoBusqueda)));
       return cumpleMes && cumpleBusqueda;
@@ -1423,7 +1681,9 @@ document.addEventListener('DOMContentLoaded', function() {
       resetearFormulario();
       window.actualizarApp();
       window.actualizarMetasUI();
-      window.cambiarPestana('historial');
+      window.actualizarInversionesUI();
+      window.actualizarInversionesHistorialUI();
+      window.cambiarPestana(gastoData.categoria === 'Inversiones' ? 'historial-inversiones' : 'historial');
     });
   }
 
@@ -1431,9 +1691,11 @@ document.addEventListener('DOMContentLoaded', function() {
     gastos.splice(index, 1);
     window.actualizarApp();
     window.actualizarMetasUI();
+    window.actualizarInversionesUI();
+    window.actualizarInversionesHistorialUI();
   };
 
-  // Exportar Excel CSV
+  // Exportar Ingresos a CSV
   function exportarIngresosExcel() {
     if (ingresos.length === 0) {
       alert("No hay ingresos registrados para exportar.");
@@ -1459,14 +1721,44 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadAnchor.remove();
   }
 
+  // Exportar Inversiones a CSV
+  function exportarInversionesExcel() {
+    const inversionesSolo = gastos.filter(g => g.categoria === 'Inversiones');
+    if (inversionesSolo.length === 0) {
+      alert("No hay aportaciones de inversión registradas para exportar.");
+      return;
+    }
+
+    let csvContent = "\uFEFFFecha;Concepto;Categoría;Subcategoría;Importe\n";
+    inversionesSolo.forEach(g => {
+      const fecha = g.fecha || '';
+      const descripcion = `"${(g.descripcion || '').replace(/"/g, '""')}"`;
+      const categoria = `"${(g.categoria || '').replace(/"/g, '""')}"`;
+      const subcategoria = `"${(g.subcategoria || '').replace(/"/g, '""')}"`;
+      const importe = g.importe ? g.importe.toString().replace('.', ',') : '0';
+      csvContent += `${fecha};${descripcion};${categoria};${subcategoria};${importe}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", url);
+    downloadAnchor.setAttribute("download", `inversiones_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  // Exportar Gastos a CSV
   function exportarGastosExcel() {
-    if (gastos.length === 0) {
+    const gastosPuros = gastos.filter(g => g.categoria !== 'Inversiones');
+    if (gastosPuros.length === 0) {
       alert("No hay gastos registrados para exportar.");
       return;
     }
 
     let csvContent = "\uFEFFFecha;Concepto;Categoría;Subcategoría;Método de Pago;Importe\n";
-    gastos.forEach(g => {
+    gastosPuros.forEach(g => {
       const fecha = g.fecha || '';
       const descripcion = `"${(g.descripcion || '').replace(/"/g, '""')}"`;
       const categoria = `"${(g.categoria || '').replace(/"/g, '""')}"`;
@@ -1527,11 +1819,23 @@ document.addEventListener('DOMContentLoaded', function() {
     inputImportarIng.addEventListener('change', importarCopiaSeguridad);
   }
 
+  // Eventos para H.Inv
+  const btnExportarInv = document.getElementById('btn-exportar-inversiones');
+  const btnImportarTriggerInv = document.getElementById('btn-importar-trigger-inversiones');
+  const inputImportarInv = document.getElementById('input-importar-inversiones');
+  if (btnExportarInv) btnExportarInv.addEventListener('click', exportarInversionesExcel);
+  if (btnImportarTriggerInv && inputImportarInv) {
+    btnImportarTriggerInv.addEventListener('click', () => inputImportarInv.click());
+    inputImportarInv.addEventListener('change', importarCopiaSeguridad);
+  }
+
   // Inicializar
   window.actualizarPresupuestoUI();
   window.actualizarRecurrentesUI();
   window.actualizarIngresosUI();
   window.actualizarMetasUI();
+  window.actualizarInversionesUI();
+  window.actualizarInversionesHistorialUI();
   comprobarRevisionSemanal();
   window.cambiarPestana('ingresos');
 });
