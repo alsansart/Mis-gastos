@@ -1,8 +1,8 @@
 :root {
   --bg-body: #f7f4ee;
   --bg-container: #ffffff;
-  --text-main: #3d3532;
-  --text-title: #2b2422;
+  --text-main: #3e2723;
+  --text-title: #4a2c20;
   --text-muted: #85756d;
   --bg-pestanas: #f0ebe1;
   --bg-pestana-activa: #ffffff;
@@ -72,16 +72,17 @@ h2 {
 
 .pestanas {
   display: flex;
+  flex-wrap: wrap;
   background: var(--bg-pestanas);
   border-radius: 12px;
   padding: 4px;
   margin-bottom: 24px;
-  gap: 2px;
+  gap: 4px;
 }
 
 .pestana-btn {
-  flex: 1;
-  padding: 8px 2px;
+  flex: 1 1 auto;
+  padding: 8px 6px;
   border: none;
   background: transparent;
   font-weight: 500;
@@ -91,6 +92,7 @@ h2 {
   cursor: pointer;
   transition: all 0.25s ease;
   text-align: center;
+  white-space: nowrap;
 }
 
 .pestana-btn.activa {
@@ -126,13 +128,17 @@ input, select {
   transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 
+input[type="date"] {
+  box-sizing: border-box;
+}
+
 input:focus, select:focus {
   outline: none;
   border-color: var(--btn-bg);
   background-color: var(--bg-container);
 }
 
-button[type="submit"] {
+button[type="submit"], #btn-submit-meta {
   width: 100%;
   padding: 13px;
   background-color: var(--btn-bg);
@@ -146,7 +152,7 @@ button[type="submit"] {
   transition: background-color 0.2s;
 }
 
-button[type="submit"]:hover {
+button[type="submit"]:hover, #btn-submit-meta:hover {
   background-color: var(--btn-hover);
 }
 
@@ -227,4 +233,12 @@ canvas {
 .item-importe {
   font-weight: 600;
   color: #b05c43;
+}
+
+.tarjeta-meta {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 12px;
 }
