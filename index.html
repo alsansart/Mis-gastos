@@ -37,12 +37,14 @@
     <!-- Pestañas de navegación -->
     <div class="pestanas">
       <button class="pestana-btn activa" onclick="cambiarPestana('ingresos')">💵 Ingresos</button>
-      <button class="pestana-btn" onclick="cambiarPestana('recurrentes')">📌 G. Fijos</button>
+      <button class="pestana-btn" onclick="cambiarPestana('recurrentes')">📌 G.Fijos</button>
       <button class="pestana-btn" onclick="cambiarPestana('presupuesto')">🎯 Presu</button>
-      <button class="pestana-btn" onclick="cambiarPestana('metas')">🏆 Metas</button>
       <button class="pestana-btn" onclick="cambiarPestana('registro')">➕ Registrar</button>
+      <button class="pestana-btn" onclick="cambiarPestana('metas')">🏆 Metas</button>
+      <button class="pestana-btn" onclick="cambiarPestana('inversiones')">📈 Inversiones</button>
       <button class="pestana-btn" onclick="cambiarPestana('dashboard')">📊 Panel</button>
       <button class="pestana-btn" onclick="cambiarPestana('historial-ingresos')">📜 H.Ingr</button>
+      <button class="pestana-btn" onclick="cambiarPestana('historial-inversiones')">📜 H.Inv</button>
       <button class="pestana-btn" onclick="cambiarPestana('historial')">📜 H.Gastos</button>
     </div>
 
@@ -171,7 +173,7 @@
 
     <!-- PESTAÑA: METAS DE AHORRO -->
     <div id="seccion-metas" class="seccion-contenido" style="display: none;">
-      <h2 style="margin-top: 10px; margin-bottom: 16px;">Crear Nueva Meta</h2>
+      <h2 id="titulo-form-meta" style="margin-top: 10px; margin-bottom: 16px;">Crear Nueva Meta</h2>
       <form id="meta-form">
         <div class="form-group">
           <label for="meta-titulo">Nombre de la Meta</label>
@@ -182,10 +184,36 @@
           <input type="number" id="meta-objetivo" step="0.01" placeholder="Ej: 1000,00" required>
         </div>
         <button type="submit" id="btn-submit-meta">Crear Meta</button>
+        <button type="button" id="btn-cancelar-meta" style="display: none; background: #85756d; width: 100%; padding: 10px; color: white; border: none; border-radius: 10px; margin-top: 8px; font-weight: 600; cursor: pointer;">Cancelar Edición</button>
       </form>
 
       <h2 style="margin-top: 24px; margin-bottom: 12px;">Progreso de Metas</h2>
       <div id="lista-metas"></div>
+    </div>
+
+    <!-- PESTAÑA: INVERSIONES -->
+    <div id="seccion-inversiones" class="seccion-contenido" style="display: none;">
+      <h2 style="margin-top: 10px; margin-bottom: 16px;">📈 Panel de Inversiones</h2>
+      <div class="tarjetas-resumen" style="margin-bottom: 20px;">
+        <div class="tarjeta-caja">
+          <h3>Total Invertido</h3>
+          <p id="total-invertido-txt">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Aportaciones</h3>
+          <p id="total-aportaciones-inv">0</p>
+        </div>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Distribución por Activo</h2>
+        <canvas id="graficoInversionesDist"></canvas>
+      </div>
+
+      <div class="dashboard-contenedor" style="margin-bottom: 20px;">
+        <h2>Evolución de Aportaciones</h2>
+        <canvas id="graficoInversionesEvolucion"></canvas>
+      </div>
     </div>
 
     <!-- PESTAÑA: REGISTRO DE GASTOS -->
@@ -336,7 +364,7 @@
         </div>
       </div>
 
-      <!-- 1. Ingresos vs. Gastos -->
+      <!-- 1. Ingresos vs. Gastos (Sin contaminar con Inversiones) -->
       <div class="dashboard-contenedor" style="margin-bottom: 20px;">
         <h2>Ingresos vs. Gastos</h2>
         <canvas id="graficoIngresosGastos"></canvas>
@@ -413,6 +441,55 @@
         <button id="btn-exportar-ingresos" style="flex: 1; background: #d18868; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📤 Exportar Copia</button>
         <button id="btn-importar-trigger-ingresos" style="flex: 1; background: #6b8e6b; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📥 Importar Copia</button>
         <input type="file" id="input-importar-ingresos" accept=".json" style="display: none;">
+      </div>
+    </div>
+
+    <!-- PESTAÑA: HISTORIAL DE INVERSIONES -->
+    <div id="seccion-historial-inversiones" class="seccion-contenido" style="display: none;">
+      <div class="tarjetas-resumen">
+        <div class="tarjeta-caja">
+          <h3>Total Invertido</h3>
+          <p id="total-importe-inversiones">0,00 €</p>
+        </div>
+        <div class="tarjeta-caja">
+          <h3>Aportaciones</h3>
+          <p id="total-registros-inversiones">0</p>
+        </div>
+      </div>
+
+      <!-- Filtro de Historial de Inversiones por Mes -->
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="filtro-historial-mes-inversiones">Filtrar por Mes</label>
+        <select id="filtro-historial-mes-inversiones">
+          <option value="todos">Todos los meses</option>
+        </select>
+      </div>
+
+      <!-- Buscador y Ordenación de Inversiones -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+        <div class="form-group" style="margin: 0;">
+          <label for="buscador-historial-inversiones">Buscar Concepto</label>
+          <input type="text" id="buscador-historial-inversiones" placeholder="Ej: Bitcoin, Fondo indexado..." style="padding: 9px 12px; font-size: 0.85rem;">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label for="orden-historial-inversiones">Ordenar por</label>
+          <select id="orden-historial-inversiones" style="padding: 9px 12px; font-size: 0.85rem;">
+            <option value="recientes">Más recientes</option>
+            <option value="antiguos">Más antiguos</option>
+            <option value="mayor-importe">Mayor importe</option>
+            <option value="menor-importe">Menor importe</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Historial de Inversiones</h2>
+      <ul id="lista-inversiones" class="lista-gastos"></ul>
+
+      <!-- Opciones de Copia de Seguridad en Inversiones -->
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color); display: flex; gap: 8px;">
+        <button id="btn-exportar-inversiones" style="flex: 1; background: #d18868; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📤 Exportar Copia</button>
+        <button id="btn-importar-trigger-inversiones" style="flex: 1; background: #6b8e6b; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">📥 Importar Copia</button>
+        <input type="file" id="input-importar-inversiones" accept=".json" style="display: none;">
       </div>
     </div>
 
