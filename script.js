@@ -4,6 +4,7 @@ window.cambiarPestana = function(pestana) {
   const secIngresos = document.getElementById('seccion-ingresos');
   const secRegistro = document.getElementById('seccion-registro');
   const secRecurrentes = document.getElementById('seccion-recurrentes');
+  const secMetas = document.getElementById('seccion-metas');
   const secDashboard = document.getElementById('seccion-dashboard');
   const secHistorialIngresos = document.getElementById('seccion-historial-ingresos');
   const secHistorial = document.getElementById('seccion-historial');
@@ -12,6 +13,7 @@ window.cambiarPestana = function(pestana) {
   if (secIngresos) secIngresos.style.display = 'none';
   if (secRegistro) secRegistro.style.display = 'none';
   if (secRecurrentes) secRecurrentes.style.display = 'none';
+  if (secMetas) secMetas.style.display = 'none';
   if (secDashboard) secDashboard.style.display = 'none';
   if (secHistorialIngresos) secHistorialIngresos.style.display = 'none';
   if (secHistorial) secHistorial.style.display = 'none';
@@ -29,19 +31,23 @@ window.cambiarPestana = function(pestana) {
     if (btns[2]) btns[2].classList.add('activa');
     if (secPresupuesto) secPresupuesto.style.display = 'block';
     if (window.actualizarPresupuestoUI) window.actualizarPresupuestoUI();
-  } else if (pestana === 'registro') {
+  } else if (pestana === 'metas') {
     if (btns[3]) btns[3].classList.add('activa');
+    if (secMetas) secMetas.style.display = 'block';
+    if (window.actualizarMetasUI) window.actualizarMetasUI();
+  } else if (pestana === 'registro') {
+    if (btns[4]) btns[4].classList.add('activa');
     if (secRegistro) secRegistro.style.display = 'block';
   } else if (pestana === 'dashboard') {
-    if (btns[4]) btns[4].classList.add('activa');
+    if (btns[5]) btns[5].classList.add('activa');
     if (secDashboard) secDashboard.style.display = 'block';
     if (window.actualizarDashboard) window.actualizarDashboard();
   } else if (pestana === 'historial-ingresos') {
-    if (btns[5]) btns[5].classList.add('activa');
+    if (btns[6]) btns[6].classList.add('activa');
     if (secHistorialIngresos) secHistorialIngresos.style.display = 'block';
     if (window.actualizarIngresosUI) window.actualizarIngresosUI();
   } else if (pestana === 'historial') {
-    if (btns[6]) btns[6].classList.add('activa');
+    if (btns[7]) btns[7].classList.add('activa');
     if (secHistorial) secHistorial.style.display = 'block';
     if (window.actualizarApp) window.actualizarApp();
   }
@@ -76,6 +82,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnSubmitIngreso = document.getElementById('btn-submit-ingreso');
   const btnCancelarEdicionIngreso = document.getElementById('btn-cancelar-edicion-ingreso');
   const resumenIngresosFiltrado = document.getElementById('resumen-ingresos-filtrado');
+
+  // Elementos de Metas
+  const metaForm = document.getElementById('meta-form');
+  const metaTitulo = document.getElementById('meta-titulo');
+  const metaObjetivo = document.getElementById('meta-objetivo');
+  const listaMetas = document.getElementById('lista-metas');
 
   // Elementos de Foto Ticket e IA OCR
   const fotoTicketInput = document.getElementById('foto-ticket');
@@ -139,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let ingresos = JSON.parse(localStorage.getItem('ingresos')) || [];
   let gastosRecurrentes = JSON.parse(localStorage.getItem('gastosRecurrentes')) || [];
   let gastos = JSON.parse(localStorage.getItem('gastos')) || [];
+  let metas = JSON.parse(localStorage.getItem('metasAhorro')) || [];
 
   const iconosIngresos = {
     "Salario": "💼",
@@ -149,6 +162,71 @@ document.addEventListener('DOMContentLoaded', function() {
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
+
+  // Lógica de Metas
+  window.actualizarMetasUI = function() {
+    if (!listaMetas) return;
+    listaMetas.innerHTML = '';
+
+    if (metas.length === 0) {
+      listaMetas.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">No hay metas creadas.</p>';
+      return;
+    }
+
+    metas.forEach((meta, idx) => {
+      const acumulado = gastos
+        .filter(g => g.categoria === 'Metas' && g.subcategoria.toLowerCase() === meta.titulo.toLowerCase())
+        .reduce((acc, g) => acc + parseFloat(g.importe), 0);
+
+      const objetivo = parseFloat(meta.objetivo) || 1;
+      const porcentaje = Math.min(100, Math.round((acumulado / objetivo) * 100));
+
+      const div = document.createElement('div');
+      div.className = 'tarjeta-meta';
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="font-size: 0.95rem; color: var(--text-title);">🎯 ${meta.titulo}</strong>
+          <button onclick="eliminarMeta(${idx})" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+          <span>${acumulado.toLocaleString('es-ES', { minimumFractionDigits: 2 })} / ${objetivo.toLocaleString('es-ES', { minimumFractionDigits: 2 })} ${monedaActual}</span>
+          <strong>${porcentaje}%</strong>
+        </div>
+        <div style="width: 100%; height: 10px; background-color: var(--progress-bg); border-radius: 5px; overflow: hidden; margin-bottom: 10px;">
+          <div style="height: 100%; width: ${porcentaje}%; background-color: #6b8e6b; transition: width 0.4s ease;"></div>
+        </div>
+        <button onclick="irARegistrarMeta('${meta.titulo.replace(/'/g, "\\'")}')" style="background: #6b8e6b; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; width: 100%;">+ Registrar Ahorro</button>
+      `;
+      listaMetas.appendChild(div);
+    });
+  };
+
+  window.irARegistrarMeta = function(nombreMeta) {
+    window.cambiarPestana('registro');
+    if (categoriaInput) {
+      categoriaInput.value = 'Metas';
+      cargarSubcategorias(categoriaInput, subcategoriaInput, grupoOtraSub, otraSubcategoriaInput, 'Metas', nombreMeta);
+    }
+  };
+
+  if (metaForm) {
+    metaForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      metas.push({
+        titulo: metaTitulo.value.trim(),
+        objetivo: metaObjetivo.value
+      });
+      localStorage.setItem('metasAhorro', JSON.stringify(metas));
+      metaForm.reset();
+      window.actualizarMetasUI();
+    });
+  }
+
+  window.eliminarMeta = function(idx) {
+    metas.splice(idx, 1);
+    localStorage.setItem('metasAhorro', JSON.stringify(metas));
+    window.actualizarMetasUI();
+  };
 
   if (ingCategoria) {
     ingCategoria.addEventListener('change', function() {
@@ -543,14 +621,13 @@ document.addEventListener('DOMContentLoaded', function() {
   let graficoFuentesIngresosInstance = null;
 
   const subcategoriasData = {
-    "Ahorro casa": ["General"],
     "Alimentación": ["Supermercados"],
     "Educación": ["Cursos", "Libros y material de estudio", "Universidad"],
     "Finanzas y obligaciones": ["Impuestos", "Préstamos", "Seguro coche", "Seguro médico"],
     "Hogar": ["Artículos limpieza", "Hipoteca", "Mantenimiento", "Seguro", "Suministros"],
-    "Imprevistos": ["General"],
     "Inversiones": ["Criptos", "Fondos", "Plan ahorro", "Plan pensiones"],
     "Mascota": ["Medicación", "Pienso", "Veterinario"],
+    "Metas": [],
     "Ocio": ["Aficiones", "Cine", "Conciertos", "Suscripciones", "Viajes"],
     "Regalos": ["Cumpleaños", "Festivos"],
     "Salud y bienestar": ["Cosmética", "Farmacia", "Gimnasio", "Peluquería"],
@@ -558,14 +635,13 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   const iconosCategorias = {
-    "Ahorro casa": "🏡",
     "Alimentación": "🛒",
     "Educación": "📚",
     "Finanzas y obligaciones": "⚖️",
     "Hogar": "🏠",
-    "Imprevistos": "🚨",
     "Inversiones": "📈",
     "Mascota": "🐾",
+    "Metas": "🎯",
     "Ocio": "🎟️",
     "Regalos": "🎁",
     "Salud y bienestar": "🩺",
@@ -584,8 +660,40 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!subInput) return;
     subInput.innerHTML = '<option value="" disabled selected>Selecciona una subcategoría</option>';
     
-    if (subcategoriasData[categoriaSeleccionada]) {
-      const subcategoriasOrdenadas = [...subcategoriasData[categoriaSeleccionada]].sort((a, b) => 
+    if (categoriaSeleccionada === "Metas") {
+      metas.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.titulo;
+        option.textContent = m.titulo;
+        subInput.appendChild(option);
+      });
+      const optionOtra = document.createElement('option');
+      optionOtra.value = "Otra";
+      optionOtra.textContent = "✍️ Escribir otra meta...";
+      subInput.appendChild(optionOtra);
+
+      if (metas.length === 0) {
+        subInput.value = "Otra";
+        if (grupoOtra) grupoOtra.style.display = 'block';
+        if (otraInput) {
+          otraInput.required = true;
+          otraInput.focus();
+        }
+      }
+    } else if (subcategoriasData[categoriaSeleccionada]) {
+      const subsGuardadas = new Set(subcategoriasData[categoriaSeleccionada]);
+      gastos.forEach(g => {
+        if (g.categoria === categoriaSeleccionada && g.subcategoria) {
+          subsGuardadas.add(g.subcategoria);
+        }
+      });
+      gastosRecurrentes.forEach(r => {
+        if (r.categoria === categoriaSeleccionada && r.subcategoria) {
+          subsGuardadas.add(r.subcategoria);
+        }
+      });
+
+      const subcategoriasOrdenadas = Array.from(subsGuardadas).sort((a, b) => 
         a.localeCompare(b, 'es')
       );
 
@@ -603,7 +711,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (subcategoriaASeleccionar) {
-      if (subcategoriasData[categoriaSeleccionada] && subcategoriasData[categoriaSeleccionada].includes(subcategoriaASeleccionar)) {
+      const subsActuales = Array.from(subInput.options).map(o => o.value);
+      if (subsActuales.includes(subcategoriaASeleccionar) || categoriaSeleccionada === "Metas") {
         subInput.value = subcategoriaASeleccionar;
         if (grupoOtra) grupoOtra.style.display = 'none';
         if (otraInput) otraInput.required = false;
@@ -615,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
           otraInput.required = true;
         }
       }
-    } else {
+    } else if (categoriaSeleccionada !== "Metas" || metas.length > 0) {
       if (grupoOtra) grupoOtra.style.display = 'none';
       if (otraInput) otraInput.required = false;
     }
@@ -828,6 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       localStorage.setItem('gastos', JSON.stringify(gastos));
       alert("¡Gastos fijos aplicados correctamente al mes actual!");
+      window.actualizarApp();
       window.cambiarPestana('historial');
     });
   }
@@ -1312,6 +1422,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       resetearFormulario();
       window.actualizarApp();
+      window.actualizarMetasUI();
       window.cambiarPestana('historial');
     });
   }
@@ -1319,9 +1430,10 @@ document.addEventListener('DOMContentLoaded', function() {
   window.eliminarGasto = function(index) {
     gastos.splice(index, 1);
     window.actualizarApp();
+    window.actualizarMetasUI();
   };
 
-  // Funciones independientes para Exportar a Excel (CSV compatible)
+  // Exportar Excel CSV
   function exportarIngresosExcel() {
     if (ingresos.length === 0) {
       alert("No hay ingresos registrados para exportar.");
@@ -1419,6 +1531,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.actualizarPresupuestoUI();
   window.actualizarRecurrentesUI();
   window.actualizarIngresosUI();
+  window.actualizarMetasUI();
   comprobarRevisionSemanal();
   window.cambiarPestana('ingresos');
 });
