@@ -39,6 +39,7 @@
       <button class="pestana-btn activa" onclick="cambiarPestana('ingresos')">💵 Ingresos</button>
       <button class="pestana-btn" onclick="cambiarPestana('recurrentes')">📌 G. Fijos</button>
       <button class="pestana-btn" onclick="cambiarPestana('presupuesto')">🎯 Presu</button>
+      <button class="pestana-btn" onclick="cambiarPestana('metas')">🏆 Metas</button>
       <button class="pestana-btn" onclick="cambiarPestana('registro')">➕ Registrar</button>
       <button class="pestana-btn" onclick="cambiarPestana('dashboard')">📊 Panel</button>
       <button class="pestana-btn" onclick="cambiarPestana('historial-ingresos')">📜 H.Ingr</button>
@@ -100,14 +101,13 @@
           <label for="rec-categoria">Categoría</label>
           <select id="rec-categoria" required>
             <option value="" disabled selected>Selecciona categoría</option>
-            <option value="Ahorro casa">🏡 Ahorro casa</option>
             <option value="Alimentación">🛒 Alimentación</option>
             <option value="Educación">📚 Educación</option>
             <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
             <option value="Hogar">🏠 Hogar</option>
-            <option value="Imprevistos">🚨 Imprevistos</option>
             <option value="Inversiones">📈 Inversiones</option>
             <option value="Mascota">🐾 Mascota</option>
+            <option value="Metas">🎯 Metas</option>
             <option value="Ocio">🎟️ Ocio</option>
             <option value="Regalos">🎁 Regalos</option>
             <option value="Salud y bienestar">🩺 Salud y bienestar</option>
@@ -169,6 +169,25 @@
       <button id="btn-activar-alertas" style="width: 100%; padding: 11px; background-color: #6b8e6b; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Activar Notificaciones 🔔</button>
     </div>
 
+    <!-- PESTAÑA: METAS DE AHORRO -->
+    <div id="seccion-metas" class="seccion-contenido" style="display: none;">
+      <h2 style="margin-top: 10px; margin-bottom: 16px;">Crear Nueva Meta</h2>
+      <form id="meta-form">
+        <div class="form-group">
+          <label for="meta-titulo">Nombre de la Meta</label>
+          <input type="text" id="meta-titulo" placeholder="Ej: Viaje de Verano, Coche nuevo..." required>
+        </div>
+        <div class="form-group">
+          <label for="meta-objetivo">Importe Objetivo (<span class="moneda-simbolo">€</span>)</label>
+          <input type="number" id="meta-objetivo" step="0.01" placeholder="Ej: 1000,00" required>
+        </div>
+        <button type="submit" id="btn-submit-meta">Crear Meta</button>
+      </form>
+
+      <h2 style="margin-top: 24px; margin-bottom: 12px;">Progreso de Metas</h2>
+      <div id="lista-metas"></div>
+    </div>
+
     <!-- PESTAÑA: REGISTRO DE GASTOS -->
     <div id="seccion-registro" class="seccion-contenido" style="display: none;">
       <h2 style="margin-top: 10px; margin-bottom: 16px;">Registrar Nuevo Gasto</h2>
@@ -187,14 +206,13 @@
           <label for="categoria">Categoría</label>
           <select id="categoria" required>
             <option value="" disabled selected>Selecciona una categoría</option>
-            <option value="Ahorro casa">🏡 Ahorro casa</option>
             <option value="Alimentación">🛒 Alimentación</option>
             <option value="Educación">📚 Educación</option>
             <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
             <option value="Hogar">🏠 Hogar</option>
-            <option value="Imprevistos">🚨 Imprevistos</option>
             <option value="Inversiones">📈 Inversiones</option>
             <option value="Mascota">🐾 Mascota</option>
+            <option value="Metas">🎯 Metas</option>
             <option value="Ocio">🎟️ Ocio</option>
             <option value="Regalos">🎁 Regalos</option>
             <option value="Salud y bienestar">🩺 Salud y bienestar</option>
@@ -280,14 +298,13 @@
           <label for="filtro-categoria">Categoría (Gastos)</label>
           <select id="filtro-categoria">
             <option value="todas">Todas</option>
-            <option value="Ahorro casa">🏡 Ahorro casa</option>
             <option value="Alimentación">🛒 Alimentación</option>
             <option value="Educación">📚 Educación</option>
             <option value="Finanzas y obligaciones">⚖️ Finanzas y obligaciones</option>
             <option value="Hogar">🏠 Hogar</option>
-            <option value="Imprevistos">🚨 Imprevistos</option>
             <option value="Inversiones">📈 Inversiones</option>
             <option value="Mascota">🐾 Mascota</option>
+            <option value="Metas">🎯 Metas</option>
             <option value="Ocio">🎟️ Ocio</option>
             <option value="Regalos">🎁 Regalos</option>
             <option value="Salud y bienestar">🩺 Salud y bienestar</option>
