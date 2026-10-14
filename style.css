@@ -128,8 +128,13 @@ input, select {
   transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 
+/* Solución para unificar el tamaño y comportamiento del input de fecha en móviles */
 input[type="date"] {
+  width: 100%;
   box-sizing: border-box;
+  max-width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 input:focus, select:focus {
