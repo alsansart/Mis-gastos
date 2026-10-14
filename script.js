@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!ultimaRevision || (ahora - parseInt(ultimaRevision, 10)) >= sieteDiasMs) {
       const haceSieteDias = new Date(ahora - sieteDiasMs);
       const gastosUltimaSemana = gastos.filter(g => {
-        if (!g.fecha || g.categoria === 'Inversiones' || g.esGastoFijo) return false;
+        if (!g.fecha || g.categoria === 'Inversiones' || g.categoria === 'Metas' || g.esGastoFijo) return false;
         const fechaGasto = new Date(g.fecha);
         return fechaGasto >= haceSieteDias && fechaGasto <= new Date();
       });
@@ -1048,12 +1048,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const mesActualStr = new Date().toISOString().slice(0, 7);
 
-    // Solo cuenta gastos del mes actual que NO sean inversiones y NO estén marcados como gastos fijos automáticos
+    // Creamos un conjunto con las descripciones de tus gastos fijos (en minúsculas)
+    const descripcionesFijas = new Set(gastosRecurrentes.map(r => (r.descripcion || '').trim().toLowerCase()));
+
+    // Filtramos los gastos del mes actual que sean únicamente consumos puntuales de lifestyle
     const gastosMesActual = gastos.filter(g => {
       if (!g.fecha || !g.fecha.startsWith(mesActualStr)) return false;
+      
+      // Excluir inversiones
       if (g.categoria === 'Inversiones') return false;
-      if (g.esGastoFijo) return false; // Excluye con total seguridad los fijos aplicados
-      return true;
+
+      // Excluir aportaciones a metas de ahorro
+      if (g.categoria === 'Metas') return false;
+      
+      // Exclusión por marca interna de gasto fijo
+      if (g.esGastoFijo) return false;
+
+      // Exclusión si su descripción coincide con alguno de la lista de gastos fijos/recurrentes
+      const descGasto = (g.descripcion || '').trim().toLowerCase();
+      if (descripcionesFijas.has(descGasto)) return false;
+
+      return true; // Solo cuenta gastos puntuales de consumo diario
     });
 
     const totalMesVal = gastosMesActual.reduce((acc, g) => acc + parseFloat(g.importe), 0);
@@ -1207,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function actualizarFiltroAnos() {
     if (!filtroAno) return;
-    const anosGastos = gastos.filter(g => g.categoria !== 'Inversiones').map(g => g.fecha ? g.fecha.split('-')[0] : new Date().getFullYear());
+    const anosGastos = gastos.filter(g => g.categoria !== 'Inversiones' && g.categoria !== 'Metas').map(g => g.fecha ? g.fecha.split('-')[0] : new Date().getFullYear());
     const anosIngresos = ingresos.map(i => i.fecha ? i.fecha.split('-')[0] : new Date().getFullYear());
     const anos = [...new Set([...anosGastos, ...anosIngresos])].sort().reverse();
     const anoActualSeleccionado = filtroAno.value;
@@ -1227,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function actualizarFiltroHistorialMeses() {
     if (!filtroHistorialMes) return;
     const mesesSet = new Set();
-    gastos.filter(g => g.categoria !== 'Inversiones').forEach(g => {
+    gastos.filter(g => g.categoria !== 'Inversiones' && g.categoria !== 'Metas').forEach(g => {
       if (g.fecha) {
         mesesSet.add(g.fecha.substring(0, 7));
       }
@@ -1269,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const metodoSel = filtroMetodo ? filtroMetodo.value : 'todos';
 
     let gastosFiltrados = gastos.filter(g => {
-      if (g.categoria === 'Inversiones') return false;
+      if (g.categoria === 'Inversiones' || g.categoria === 'Metas') return false;
       if (!g.fecha) return true;
       const partes = g.fecha.split('-');
       const partesAno = partes[0];
@@ -1544,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const criterioOrden = ordenHistorial ? ordenHistorial.value : 'recientes';
 
     let gastosMostrados = gastos.filter(g => {
-      if (g.categoria === 'Inversiones') return false;
+      if (g.categoria === 'Inversiones' || g.categoria === 'Metas') return false;
       const cumpleMes = (mesHistorialSeleccionado === 'todos' || (g.fecha && g.fecha.startsWith(mesHistorialSeleccionado)));
       const cumpleBusqueda = (!textoBusqueda || (g.descripcion && g.descripcion.toLowerCase().includes(textoBusqueda)));
       return cumpleMes && cumpleBusqueda;
@@ -1751,7 +1766,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function exportarGastosExcel() {
-    const gastosPuros = gastos.filter(g => g.categoria !== 'Inversiones');
+    const gastosPuros = gastos.filter(g => g.categoria !== 'Inversiones' && g.categoria !== 'Metas');
     if (gastosPuros.length === 0) {
       alert("No hay gastos registrados para exportar.");
       return;
