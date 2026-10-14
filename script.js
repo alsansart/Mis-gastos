@@ -882,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
     "Inversiones": ["Criptos", "Fondos", "Plan ahorro", "Plan pensiones"],
     "Mascota": ["Medicación", "Pienso", "Veterinario"],
     "Metas": [],
-    "Ocio": ["Aficiones", "Cine", "Conciertos", "Suscripciones", "Viajes"],
+    "Ocio": ["Aficiones", "Cine", "Conciertos", "Restaurantes", "Suscripciones", "Viajes"],
     "Regalos": ["Cumpleaños", "Festivos"],
     "Salud y bienestar": ["Cosmética", "Farmacia", "Gimnasio", "Peluquería"],
     "Transporte": ["Gasolina", "ITV", "Mecánico", "Parking", "Peajes"]
@@ -1047,7 +1047,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (presupuestoActualTxt) presupuestoActualTxt.textContent = monthlyBudget.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + monedaActual;
 
     const mesActualStr = new Date().toISOString().slice(0, 7);
-    const gastosMesActual = gastos.filter(g => g.fecha && g.fecha.startsWith(mesActualStr) && g.categoria !== 'Inversiones');
+    const descripcionesRecurrentes = new Set(gastosRecurrentes.map(r => `${r.descripcion}_${r.importe}`));
+
+    const gastosMesActual = gastos.filter(g => {
+      if (!g.fecha || !g.fecha.startsWith(mesActualStr) || g.categoria === 'Inversiones') return false;
+      const claveGasto = `${g.descripcion}_${g.importe}`;
+      if (descripcionesRecurrentes.has(claveGasto)) {
+        return false; // Excluye los gastos fijos automáticos
+      }
+      return true;
+    });
+
     const totalMesVal = gastosMesActual.reduce((acc, g) => acc + parseFloat(g.importe), 0);
 
     if (budgetTextEl) budgetTextEl.textContent = `${totalMesVal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaActual} / ${monthlyBudget.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaActual}`;
@@ -1068,11 +1078,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (budgetStatusMsg) {
       if (rawPercentage >= 100) {
-        budgetStatusMsg.textContent = '⚠️ ¡Has superado el presupuesto asignado para este mes!';
+        budgetStatusMsg.textContent = '⚠️ ¡Has superado el presupuesto en gastos puntuales este mes!';
       } else if (rawPercentage >= 80) {
-        budgetStatusMsg.textContent = '⚡ Estás cerca de alcanzar el límite de tu presupuesto.';
+        budgetStatusMsg.textContent = '⚡ Estás cerca de alcanzar el límite de tu presupuesto puntual.';
       } else {
-        budgetStatusMsg.textContent = '✨ ¡Vas por buen camino con tus ahorros este mes!';
+        budgetStatusMsg.textContent = '✨ ¡Tus gastos puntuales van por buen camino este mes!';
       }
     }
   };
@@ -1259,7 +1269,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const catSel = filtroCategoria ? filtroCategoria.value : 'todas';
     const metodoSel = filtroMetodo ? filtroMetodo.value : 'todos';
 
-    // Excluimos la categoría Inversiones del panel general de gastos
     let gastosFiltrados = gastos.filter(g => {
       if (g.categoria === 'Inversiones') return false;
       if (!g.fecha) return true;
@@ -1301,7 +1310,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-    // 1. Ingresos vs. Gastos (Puros, sin Inversiones)
     const elGraficoIngGastos = document.getElementById('graficoIngresosGastos');
     if (elGraficoIngGastos && typeof Chart !== 'undefined') {
       const ctxIG = elGraficoIngGastos.getContext('2d');
@@ -1370,7 +1378,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 2. Distribución ingresos
     const elGraficoFuentesIng = document.getElementById('graficoFuentesIngresos');
     if (elGraficoFuentesIng && typeof Chart !== 'undefined') {
       const ctxFI = elGraficoFuentesIng.getContext('2d');
@@ -1411,7 +1418,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 3. Distribución gastos
     const elGraficoCat = document.getElementById('graficoCategorias');
     if (elGraficoCat && typeof Chart !== 'undefined') {
       const ctxCat = elGraficoCat.getContext('2d');
@@ -1452,7 +1458,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 4. Subcategorías gastos
     const elGraficoSub = document.getElementById('graficoSubcategorias');
     if (elGraficoSub && typeof Chart !== 'undefined') {
       const ctxSub = elGraficoSub.getContext('2d');
@@ -1487,7 +1492,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // 5. Método pago
     const elGraficoMet = document.getElementById('graficoMetodos');
     if (elGraficoMet && typeof Chart !== 'undefined') {
       const ctxMet = elGraficoMet.getContext('2d');
@@ -1540,7 +1544,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const textoBusqueda = buscadorHistorial ? buscadorHistorial.value.toLowerCase().trim() : '';
     const criterioOrden = ordenHistorial ? ordenHistorial.value : 'recientes';
 
-    // Excluimos Inversiones del historial de gastos cotidianos
     let gastosMostrados = gastos.filter(g => {
       if (g.categoria === 'Inversiones') return false;
       const cumpleMes = (mesHistorialSeleccionado === 'todos' || (g.fecha && g.fecha.startsWith(mesHistorialSeleccionado)));
@@ -1695,7 +1698,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.actualizarInversionesHistorialUI();
   };
 
-  // Exportar Ingresos a CSV
   function exportarIngresosExcel() {
     if (ingresos.length === 0) {
       alert("No hay ingresos registrados para exportar.");
@@ -1721,7 +1723,6 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadAnchor.remove();
   }
 
-  // Exportar Inversiones a CSV
   function exportarInversionesExcel() {
     const inversionesSolo = gastos.filter(g => g.categoria === 'Inversiones');
     if (inversionesSolo.length === 0) {
@@ -1749,7 +1750,6 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadAnchor.remove();
   }
 
-  // Exportar Gastos a CSV
   function exportarGastosExcel() {
     const gastosPuros = gastos.filter(g => g.categoria !== 'Inversiones');
     if (gastosPuros.length === 0) {
@@ -1799,7 +1799,6 @@ document.addEventListener('DOMContentLoaded', function() {
     reader.readAsText(file);
   }
 
-  // Eventos para H.Gastos
   const btnExportar = document.getElementById('btn-exportar');
   const btnImportarTrigger = document.getElementById('btn-importar-trigger');
   const inputImportar = document.getElementById('input-importar');
@@ -1809,7 +1808,6 @@ document.addEventListener('DOMContentLoaded', function() {
     inputImportar.addEventListener('change', importarCopiaSeguridad);
   }
 
-  // Eventos para H.Ingr
   const btnExportarIng = document.getElementById('btn-exportar-ingresos');
   const btnImportarTriggerIng = document.getElementById('btn-importar-trigger-ingresos');
   const inputImportarIng = document.getElementById('input-importar-ingresos');
@@ -1819,7 +1817,6 @@ document.addEventListener('DOMContentLoaded', function() {
     inputImportarIng.addEventListener('change', importarCopiaSeguridad);
   }
 
-  // Eventos para H.Inv
   const btnExportarInv = document.getElementById('btn-exportar-inversiones');
   const btnImportarTriggerInv = document.getElementById('btn-importar-trigger-inversiones');
   const inputImportarInv = document.getElementById('input-importar-inversiones');
@@ -1829,7 +1826,6 @@ document.addEventListener('DOMContentLoaded', function() {
     inputImportarInv.addEventListener('change', importarCopiaSeguridad);
   }
 
-  // Inicializar
   window.actualizarPresupuestoUI();
   window.actualizarRecurrentesUI();
   window.actualizarIngresosUI();
